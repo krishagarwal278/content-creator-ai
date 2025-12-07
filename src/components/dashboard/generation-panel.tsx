@@ -3,10 +3,13 @@ import { ModelSelector } from "@/components/ui/model-selector";
 import { ContentTypeSelector } from "@/components/ui/content-type-selector";
 import { FileUploadZone } from "@/components/ui/file-upload-zone";
 import { Button } from "@/components/ui/button";
-import { Wand2, Loader2, ChevronRight } from "lucide-react";
+import { Wand2, Loader2, ChevronRight, Video, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useCreateProject } from "@/hooks/useProjects";
+import { toast } from "sonner";
+import type { PexelsVideo } from "@/hooks/usePexelsVideos";
 
 interface UploadedFile {
   id: string;
@@ -15,20 +18,48 @@ interface UploadedFile {
   type: string;
 }
 
-export function GenerationPanel() {
+interface GenerationPanelProps {
+  selectedVideo?: PexelsVideo | null;
+}
+
+export function GenerationPanel({ selectedVideo }: GenerationPanelProps) {
   const [selectedModel, setSelectedModel] = React.useState("gpt-4o");
-  const [contentType, setContentType] = React.useState("reel");
+  const [contentType, setContentType] = React.useState<"reel" | "short" | "vfx_movie" | "presentation">("reel");
   const [files, setFiles] = React.useState<UploadedFile[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [duration, setDuration] = React.useState([30]);
   const [voiceover, setVoiceover] = React.useState(true);
   const [captions, setCaptions] = React.useState(true);
 
+  const createProject = useCreateProject();
+
   const handleGenerate = async () => {
+    if (files.length === 0) {
+      toast.error("Please upload at least one file");
+      return;
+    }
+
     setIsGenerating(true);
-    // Simulate generation
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setIsGenerating(false);
+
+    try {
+      // Create the project in the database
+      await createProject.mutateAsync({
+        name: files[0]?.name?.split(".")[0] || "Untitled Project",
+        content_type: contentType,
+        target_duration: duration[0],
+        model: selectedModel,
+        voiceover_enabled: voiceover,
+        captions_enabled: captions,
+      });
+
+      // Simulate generation process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.success("Project created! Generation will begin shortly.");
+    } catch (error) {
+      toast.error("Failed to create project");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const canGenerate = files.length > 0;
@@ -46,6 +77,33 @@ export function GenerationPanel() {
         <FileUploadZone files={files} onFilesChange={setFiles} />
       </section>
 
+      {/* Selected Background Video */}
+      {selectedVideo && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Video className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Selected Background</span>
+          </div>
+          <div className="glass rounded-xl p-3 flex items-center gap-3">
+            <div className="w-20 h-12 rounded-lg overflow-hidden shrink-0">
+              <img
+                src={selectedVideo.image}
+                alt="Selected video"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                By {selectedVideo.user}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedVideo.duration}s • {selectedVideo.width}x{selectedVideo.height}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Content Type */}
       <section>
         <div className="flex items-center gap-2 mb-4">
@@ -54,7 +112,7 @@ export function GenerationPanel() {
           </span>
           <h2 className="font-semibold">Choose Format</h2>
         </div>
-        <ContentTypeSelector value={contentType} onValueChange={setContentType} />
+        <ContentTypeSelector value={contentType} onValueChange={(v) => setContentType(v as typeof contentType)} />
       </section>
 
       {/* Model Selection */}

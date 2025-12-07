@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pexels_videos: {
+        Row: {
+          created_at: string
+          duration: number
+          height: number
+          id: string
+          image_url: string
+          pexels_id: number
+          query: string
+          url: string
+          user_name: string | null
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          height: number
+          id?: string
+          image_url: string
+          pexels_id: number
+          query: string
+          url: string
+          user_name?: string | null
+          width: number
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          height?: number
+          id?: string
+          image_url?: string
+          pexels_id?: number
+          query?: string
+          url?: string
+          user_name?: string | null
+          width?: number
+        }
+        Relationships: []
+      }
+      project_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url: string | null
+          id: string
+          processed: boolean
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          file_url?: string | null
+          id?: string
+          processed?: boolean
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          processed?: boolean
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          captions_enabled: boolean
+          content_type: string
+          created_at: string
+          description: string | null
+          id: string
+          model: string
+          name: string
+          script: string | null
+          status: string
+          target_duration: number
+          thumbnail_url: string | null
+          updated_at: string
+          video_url: string | null
+          voiceover_enabled: boolean
+        }
+        Insert: {
+          captions_enabled?: boolean
+          content_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          model?: string
+          name: string
+          script?: string | null
+          status?: string
+          target_duration?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string | null
+          voiceover_enabled?: boolean
+        }
+        Update: {
+          captions_enabled?: boolean
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          model?: string
+          name?: string
+          script?: string | null
+          status?: string
+          target_duration?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string | null
+          voiceover_enabled?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

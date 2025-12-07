@@ -1,8 +1,27 @@
+import * as React from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { GenerationPanel } from "@/components/dashboard/generation-panel";
 import { PreviewPanel } from "@/components/dashboard/preview-panel";
+import { type Project } from "@/hooks/useProjects";
+import { type PexelsVideo } from "@/hooks/usePexelsVideos";
 
 const Index = () => {
+  const [selectedProject, setSelectedProject] = React.useState<Project | null>(null);
+  const [selectedVideo, setSelectedVideo] = React.useState<PexelsVideo | null>(null);
+
+  const handleNewProject = () => {
+    setSelectedProject(null);
+    setSelectedVideo(null);
+  };
+
+  const handleSelectProject = (project: Project) => {
+    setSelectedProject(project);
+  };
+
+  const handleSelectVideo = (video: PexelsVideo) => {
+    setSelectedVideo(video);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Ambient background effects */}
@@ -14,7 +33,11 @@ const Index = () => {
         />
       </div>
 
-      <Sidebar />
+      <Sidebar
+        onNewProject={handleNewProject}
+        onSelectProject={handleSelectProject}
+        selectedProjectId={selectedProject?.id}
+      />
 
       {/* Main Content */}
       <main className="ml-64 min-h-screen p-6">
@@ -37,7 +60,7 @@ const Index = () => {
               className="glass-strong rounded-2xl p-6 border border-border/50 animate-fade-in"
               style={{ animationDelay: "0.1s" }}
             >
-              <GenerationPanel />
+              <GenerationPanel selectedVideo={selectedVideo} />
             </div>
 
             {/* Right Panel - Preview */}
@@ -45,7 +68,7 @@ const Index = () => {
               className="glass-strong rounded-2xl p-6 border border-border/50 animate-fade-in"
               style={{ animationDelay: "0.2s" }}
             >
-              <PreviewPanel />
+              <PreviewPanel onSelectVideo={handleSelectVideo} />
             </div>
           </div>
 

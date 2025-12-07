@@ -1,9 +1,25 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Play, Download, Share2, Maximize2, Volume2 } from "lucide-react";
+import { Play, Download, Share2, Maximize2, Volume2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VideoPreviewGrid } from "./video-preview-grid";
+import { ProjectHistory } from "./project-history";
+import type { PexelsVideo } from "@/hooks/usePexelsVideos";
 
-export function PreviewPanel() {
+interface PreviewPanelProps {
+  onSelectVideo?: (video: PexelsVideo) => void;
+}
+
+export function PreviewPanel({ onSelectVideo }: PreviewPanelProps) {
+  const [videoQuery, setVideoQuery] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(videoQuery);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -82,27 +98,39 @@ export function PreviewPanel() {
         </Button>
       </div>
 
-      {/* Recent Projects */}
-      <div className="mt-6">
-        <h3 className="font-medium text-sm text-muted-foreground mb-3">
-          Recent Projects
-        </h3>
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass rounded-xl p-3 flex items-center gap-3 opacity-50 cursor-not-allowed"
-            >
-              <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-                <Play className="h-4 w-4 text-muted-foreground" />
+      {/* Tabs for Background Videos & History */}
+      <div className="mt-6 flex-1 min-h-0">
+        <Tabs defaultValue="videos" className="h-full flex flex-col">
+          <TabsList className="w-full glass rounded-xl mb-3">
+            <TabsTrigger value="videos" className="flex-1">Background Videos</TabsTrigger>
+            <TabsTrigger value="history" className="flex-1">Recent</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="videos" className="flex-1 overflow-y-auto space-y-3">
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={videoQuery}
+                  onChange={(e) => setVideoQuery(e.target.value)}
+                  placeholder="Search Pexels videos..."
+                  className="pl-9 rounded-xl glass border-border/50"
+                />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Project {i}</p>
-                <p className="text-xs text-muted-foreground">Coming soon</p>
-              </div>
-            </div>
-          ))}
-        </div>
+              <Button type="submit" variant="secondary" className="rounded-xl">
+                Search
+              </Button>
+            </form>
+            <VideoPreviewGrid
+              searchQuery={searchQuery}
+              onSelectVideo={onSelectVideo}
+            />
+          </TabsContent>
+
+          <TabsContent value="history" className="flex-1 overflow-y-auto">
+            <ProjectHistory />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
