@@ -1,4 +1,0 @@
-project_id = "dpacdsibfdztihuwrrhq"
-
-[functions.search-pexels-videos]
-verify_jwt = false

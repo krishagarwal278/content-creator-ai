@@ -1,7 +1,15 @@
 import * as React from "react";
 import { Play, ExternalLink } from "lucide-react";
 import { usePexelsVideos, type PexelsVideo } from "@/hooks/usePexelsVideos";
-import { cn } from "@/lib/utils";
+import {
+  Grid,
+  Card,
+  Box,
+  Typography,
+  Skeleton,
+  Link,
+} from "@mui/material";
+import "@/css/components.css";
 
 interface VideoPreviewGridProps {
   searchQuery: string;
@@ -22,69 +30,74 @@ export function VideoPreviewGrid({
 
   if (!searchQuery) {
     return (
-      <div className="glass rounded-xl p-6 text-center">
-        <p className="text-sm text-muted-foreground">
+      <Card variant="outlined" className="empty-state-card" sx={{ bgcolor: 'background.default' }}>
+        <Typography variant="body2" color="text.secondary">
           Enter a search query to find background videos
-        </p>
-      </div>
+        </Typography>
+      </Card>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <Grid container spacing={2}>
         {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="aspect-video rounded-xl bg-secondary/50 animate-pulse"
-          />
+          <Grid size={{ xs: 6 }} key={i}>
+            <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 3 }} />
+          </Grid>
         ))}
-      </div>
+      </Grid>
     );
   }
 
   if (error) {
     return (
-      <div className="glass rounded-xl p-6 text-center">
-        <p className="text-sm text-destructive">Failed to load videos</p>
-      </div>
+      <Card variant="outlined" className="empty-state-card" sx={{ bgcolor: 'background.default' }}>
+        <Typography variant="body2" color="error">
+          Failed to load videos
+        </Typography>
+      </Card>
     );
   }
 
   if (!data?.videos?.length) {
     return (
-      <div className="glass rounded-xl p-6 text-center">
-        <p className="text-sm text-muted-foreground">No videos found for "{searchQuery}"</p>
-      </div>
+      <Card variant="outlined" className="empty-state-card" sx={{ bgcolor: 'background.default' }}>
+        <Typography variant="body2" color="text.secondary">
+          No videos found for "{searchQuery}"
+        </Typography>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="caption" color="text.secondary">
           {data.totalResults} videos found
-        </p>
-        <a
+        </Typography>
+        <Link
           href={`https://www.pexels.com/search/videos/${encodeURIComponent(searchQuery)}/`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-primary hover:underline flex items-center gap-1"
+          underline="hover"
+          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem' }}
         >
           View on Pexels
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
+          <ExternalLink size={12} />
+        </Link>
+      </Box>
+      <Grid container spacing={2}>
         {data.videos.map((video) => (
-          <VideoCard
-            key={video.id}
-            video={video}
-            onClick={() => onSelectVideo?.(video)}
-          />
+          <Grid size={{ xs: 6 }} key={video.id}>
+            <VideoCard
+              video={video}
+              onClick={() => onSelectVideo?.(video)}
+            />
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Box>
   );
 }
 
@@ -106,7 +119,7 @@ function VideoCard({ video, onClick }: VideoCardProps) {
   React.useEffect(() => {
     if (videoRef.current) {
       if (isHovering) {
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => { });
       } else {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
@@ -115,44 +128,69 @@ function VideoCard({ video, onClick }: VideoCardProps) {
   }, [isHovering]);
 
   return (
-    <div
-      className={cn(
-        "relative aspect-video rounded-xl overflow-hidden cursor-pointer group",
-        "ring-2 ring-transparent hover:ring-primary/50 transition-all"
-      )}
+    <Card
+      className="video-card"
       onClick={onClick}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <img
+      {/* Thumbnail Image */}
+      <Box
+        component="img"
         src={video.image}
         alt={`Video by ${video.user}`}
-        className={cn(
-          "absolute inset-0 w-full h-full object-cover transition-opacity",
-          isHovering ? "opacity-0" : "opacity-100"
-        )}
+        className="video-card-media"
+        sx={{ opacity: isHovering ? 0 : 1 }}
       />
-      <video
+
+      {/* Video Element */}
+      <Box
+        component="video"
         ref={videoRef}
         src={videoFile?.link}
         muted
         loop
         playsInline
-        className={cn(
-          "absolute inset-0 w-full h-full object-cover transition-opacity",
-          isHovering ? "opacity-100" : "opacity-0"
-        )}
+        className="video-card-media"
+        sx={{ opacity: isHovering ? 1 : 0 }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="text-[10px] text-white/80 truncate">By {video.user}</p>
-        <p className="text-[10px] text-white/60">{video.duration}s</p>
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
-          <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
-        </div>
-      </div>
-    </div>
+
+      {/* Overlay Gradient (Hover) */}
+      <Box
+        className="video-overlay-gradient"
+        sx={{ opacity: isHovering ? 1 : 0 }}
+      />
+
+      {/* Info (Hover) */}
+      <Box
+        className="video-info"
+        sx={{ opacity: isHovering ? 1 : 0 }}
+      >
+        <Typography variant="caption" color="white" noWrap display="block" sx={{ opacity: 0.9 }}>
+          By {video.user}
+        </Typography>
+        <Typography variant="caption" color="white" sx={{ opacity: 0.7 }}>
+          {video.duration}s
+        </Typography>
+      </Box>
+
+      {/* Play Icon (Hover) */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: isHovering ? 1 : 0,
+          transition: 'opacity 0.3s',
+          pointerEvents: 'none'
+        }}
+      >
+        <Box className="play-icon-container">
+          <Play size={20} color="white" fill="white" />
+        </Box>
+      </Box>
+    </Card>
   );
 }
