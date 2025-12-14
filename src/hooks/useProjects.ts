@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Project {
   id: string;
+  user_id: string;
   name: string;
   description: string | null;
   status: "draft" | "processing" | "completed" | "failed";
@@ -28,51 +30,27 @@ export interface CreateProjectInput {
   captions_enabled: boolean;
 }
 
-// Mock data store (in-memory for now, will be replaced with Supabase later)
-let mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "Sample Marketing Reel",
-    description: "A demo marketing video",
-    status: "completed",
-    content_type: "reel",
-    target_duration: 30,
-    model: "gpt-4o",
-    voiceover_enabled: true,
-    captions_enabled: true,
-    thumbnail_url: null,
-    video_url: null,
-    script: null,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "2",
-    name: "Product Demo Short",
-    description: "Quick product showcase",
-    status: "processing",
-    content_type: "short",
-    target_duration: 60,
-    model: "gemini-pro",
-    voiceover_enabled: true,
-    captions_enabled: false,
-    thumbnail_url: null,
-    video_url: null,
-    script: null,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-];
 
 export function useProjects() {
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return [...mockProjects].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("User not found");
+
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        toast.error("Failed to fetch projects");
+        throw error;
+      }
+
+      return data as Project[];
     },
   });
 }
@@ -82,8 +60,23 @@ export function useProject(id: string | null) {
     queryKey: ["project", id],
     queryFn: async () => {
       if (!id) return null;
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      return mockProjects.find((p) => p.id === id) || null;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
+      
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        toast.error("Failed to fetch project");
+        throw error;
+      }
+
+      return data as Project;
     },
     enabled: !!id,
   });
@@ -94,28 +87,30 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (input: CreateProjectInput) => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const { data: { user } } = await supabase.auth.getUser();
       
-      const newProject: Project = {
-        id: Date.now().toString(),
-        name: input.name,
-        description: input.description || null,
-        status: "draft",
-        content_type: input.content_type,
-        target_duration: input.target_duration,
-        model: input.model,
-        voiceover_enabled: input.voiceover_enabled,
-        captions_enabled: input.captions_enabled,
-        thumbnail_url: null,
-        video_url: null,
-        script: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      mockProjects.push(newProject);
-      return newProject;
+      if (!user) {
+        throw new Error("You must be logged in to create a project");
+      }
+
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          user_id: user.id,
+          name: input.name,
+          description: input.description,
+          content_type: input.content_type,
+          target_duration: input.target_duration,
+          model: input.model,
+          voiceover_enabled: input.voiceover_enabled,
+          captions_enabled: input.captions_enabled,
+          status: "draft",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Project;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -138,18 +133,15 @@ export function useUpdateProject() {
       id: string;
       updates: Partial<Project>;
     }) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      
-      const projectIndex = mockProjects.findIndex((p) => p.id === id);
-      if (projectIndex === -1) throw new Error("Project not found");
-      
-      mockProjects[projectIndex] = {
-        ...mockProjects[projectIndex],
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-      
-      return mockProjects[projectIndex];
+      const { data, error } = await supabase
+        .from("projects")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Project;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -166,8 +158,12 @@ export function useDeleteProject() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      mockProjects = mockProjects.filter((p) => p.id !== id);
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -178,4 +174,3 @@ export function useDeleteProject() {
     },
   });
 }
-

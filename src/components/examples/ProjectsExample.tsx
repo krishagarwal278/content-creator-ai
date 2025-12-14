@@ -7,9 +7,9 @@ import { useState } from 'react';
 import {
     useProjects,
     useCreateProject,
-    useUpdateProject,
-    useDeleteProject,
-} from '@/hooks/use-projects';
+    type CreateProjectInput
+} from '@/hooks/useProjects';
+import { useUpdateProject, useDeleteProject } from '@/hooks/useProjects';
 import {
     Button,
     Card,
@@ -26,7 +26,10 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel
+    InputLabel,
+    FormControlLabel,
+    Switch,
+    Slider
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -37,9 +40,13 @@ import {
 export function ProjectsExample() {
     const [newProject, setNewProject] = useState({
         name: '',
-        content_type: '',
+        content_type: '' as CreateProjectInput['content_type'] | '',
         description: '',
         status: 'draft',
+        target_duration: 60,
+        model: 'standard',
+        voiceover_enabled: false,
+        captions_enabled: false
     });
 
     // Fetch all projects
@@ -52,10 +59,18 @@ export function ProjectsExample() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Use default if empty
+        const typeToUse = (newProject.content_type || 'short') as CreateProjectInput['content_type'];
+
         await createMutation.mutateAsync({
-            ...newProject,
-            name: newProject.name, // Ensure required fields
-            content_type: newProject.content_type || 'short'
+            name: newProject.name,
+            description: newProject.description,
+            content_type: typeToUse,
+            target_duration: newProject.target_duration,
+            model: newProject.model,
+            voiceover_enabled: newProject.voiceover_enabled,
+            captions_enabled: newProject.captions_enabled
         });
         // Reset form
         setNewProject({
@@ -63,6 +78,10 @@ export function ProjectsExample() {
             content_type: '',
             description: '',
             status: 'draft',
+            target_duration: 60,
+            model: 'standard',
+            voiceover_enabled: false,
+            captions_enabled: false
         });
     };
 
@@ -77,7 +96,7 @@ export function ProjectsExample() {
         if (newName) {
             await updateMutation.mutateAsync({
                 id,
-                data: { name: newName },
+                updates: { name: newName },
             });
         }
     };
@@ -128,7 +147,7 @@ export function ProjectsExample() {
                                             value={newProject.content_type}
                                             label="Content Type"
                                             onChange={(e) =>
-                                                setNewProject({ ...newProject, content_type: e.target.value })
+                                                setNewProject({ ...newProject, content_type: e.target.value as CreateProjectInput['content_type'] })
                                             }
                                         >
                                             <MenuItem value="reel">Reel</MenuItem>

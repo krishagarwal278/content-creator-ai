@@ -6,6 +6,7 @@ import {
   History,
   Sparkles,
   PlusCircle,
+  LogOut,
 } from "lucide-react";
 import {
   Box,
@@ -19,10 +20,12 @@ import {
   Button,
   Avatar,
   Divider,
-  Stack
+  Stack,
+  IconButton
 } from "@mui/material";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { useProjectContext } from "@/context/ProjectContext";
+import { useAuth } from "@/context/AuthContext";
 import "@/css/layout.css";
 
 const DRAWER_WIDTH = 260;
@@ -42,7 +45,9 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const { createNewProject } = useProjectContext();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
   const location = useLocation();
 
   const handleNewProject = () => {
@@ -122,20 +127,25 @@ export function Sidebar() {
       {/* User Section */}
       <Divider />
       <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ px: 1, py: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 1 }}>
           <Avatar className="user-avatar">
-            U
+            {user?.email?.charAt(0).toUpperCase() || "G"}
           </Avatar>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="body2" fontWeight="medium" noWrap>
-              Guest User
+              {user?.email || "Guest User"}
             </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
               Free Plan
             </Typography>
           </Box>
+          <IconButton onClick={() => signOut()} size="small" title="Log Out">
+            <LogOut size={18} />
+          </IconButton>
         </Stack>
       </Box>
     </Drawer>
   );
 }
+
+

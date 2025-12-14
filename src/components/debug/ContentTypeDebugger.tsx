@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCreateProject } from '@/hooks/use-projects';
+import { useCreateProject } from '@/hooks/useProjects';
 
 export function ContentTypeDebugger() {
     const [testValue, setTestValue] = useState('');
@@ -20,9 +20,12 @@ export function ContentTypeDebugger() {
         try {
             await createProject.mutateAsync({
                 name: `Test ${value}`,
-                content_type: value,
+                content_type: value as any,
                 description: 'Debug test',
-                status: 'draft',
+                target_duration: 60,
+                model: 'standard',
+                voiceover_enabled: false,
+                captions_enabled: false,
             });
 
             setResults(prev => [...prev, { value, success: true }]);
@@ -97,8 +100,8 @@ export function ContentTypeDebugger() {
                                 <div
                                     key={i}
                                     className={`p-2 rounded text-sm ${result.success
-                                            ? 'bg-green-500/10 text-green-500'
-                                            : 'bg-red-500/10 text-red-500'
+                                        ? 'bg-green-500/10 text-green-500'
+                                        : 'bg-red-500/10 text-red-500'
                                         }`}
                                 >
                                     <span className="font-mono">{result.value}</span>
