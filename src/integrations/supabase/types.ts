@@ -110,6 +110,7 @@ export type Database = {
           updated_at: string
           video_url: string | null
           voiceover_enabled: boolean
+          user_id: string
         }
         Insert: {
           captions_enabled?: boolean
@@ -126,6 +127,7 @@ export type Database = {
           updated_at?: string
           video_url?: string | null
           voiceover_enabled?: boolean
+          user_id: string
         }
         Update: {
           captions_enabled?: boolean
@@ -142,6 +144,7 @@ export type Database = {
           updated_at?: string
           video_url?: string | null
           voiceover_enabled?: boolean
+          user_id?: string
         }
         Relationships: []
       }

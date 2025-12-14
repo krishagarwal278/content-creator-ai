@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/use-projects";
+import { useProjects, useCreateProject, useDeleteProject, type CreateProjectInput } from "@/hooks/useProjects";
 import {
     Box,
     Button,
@@ -34,11 +34,15 @@ import {
 const Projects = () => {
     const theme = useTheme();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CreateProjectInput & { status: string }>({
         name: "",
-        content_type: "",
+        content_type: "reel",
         description: "",
         status: "draft",
+        target_duration: 60,
+        model: "gpt-4o",
+        voiceover_enabled: true,
+        captions_enabled: true,
     });
 
     const { data: projects, isLoading, error } = useProjects();
@@ -53,7 +57,7 @@ const Projects = () => {
         projectsLength: projects?.length,
     });
 
-    const handleInputChange = (field: string, value: string) => {
+    const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -66,9 +70,13 @@ const Projects = () => {
             // Reset form
             setFormData({
                 name: "",
-                content_type: "",
+                content_type: "reel",
                 description: "",
                 status: "draft",
+                target_duration: 60,
+                model: "gpt-4o",
+                voiceover_enabled: true,
+                captions_enabled: true,
             });
         } catch (error) {
             console.error("Failed to create project:", error);
