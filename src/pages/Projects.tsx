@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, type CreateProjectInput } from "@/hooks/useProjects";
 import {
     Box,
@@ -33,6 +34,7 @@ import {
 
 const Projects = () => {
     const theme = useTheme();
+    const navigate = useNavigate();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [formData, setFormData] = useState<CreateProjectInput & { status: string }>({
         name: "",
@@ -65,7 +67,7 @@ const Projects = () => {
         e.preventDefault();
 
         try {
-            await createProject.mutateAsync(formData);
+            const newProject = await createProject.mutateAsync(formData);
             setIsCreateDialogOpen(false);
             // Reset form
             setFormData({
@@ -78,6 +80,7 @@ const Projects = () => {
                 voiceover_enabled: true,
                 captions_enabled: true,
             });
+            navigate(`/project/${newProject.id}`);
         } catch (error) {
             console.error("Failed to create project:", error);
         }
@@ -313,16 +316,24 @@ const Projects = () => {
                                             </Typography>
                                         )}
 
-                                        <Button
-                                            variant="outlined"
-                                            color="error"
-                                            size="small"
-                                            startIcon={<DeleteIcon />}
-                                            onClick={() => handleDeleteProject(project.id, project.name)}
-                                            fullWidth
-                                        >
-                                            Delete
-                                        </Button>
+                                        <Stack direction="row" spacing={1} mt={1}>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                fullWidth
+                                                onClick={() => navigate(`/project/${project.id}`)}
+                                            >
+                                                Open
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => handleDeleteProject(project.id, project.name)}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </Button>
+                                        </Stack>
                                     </Stack>
                                 </CardContent>
                             </Card>
