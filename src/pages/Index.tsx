@@ -1,10 +1,20 @@
 import * as React from "react";
+import { useParams } from "react-router-dom";
 import { GenerationPanel } from "@/components/dashboard/generation-panel";
 import { PreviewPanel } from "@/components/dashboard/preview-panel";
 import { useProjectContext } from "@/context/ProjectContext";
+import { useProject } from "@/hooks/useProjects";
 
 const Index = () => {
-  const { selectedVideo, setSelectedVideo } = useProjectContext();
+  const { id } = useParams();
+  const { selectedVideo, setSelectedVideo, setSelectedProject } = useProjectContext();
+  const { data: project } = useProject(id || null);
+
+  React.useEffect(() => {
+    if (project) {
+      setSelectedProject(project);
+    }
+  }, [project, setSelectedProject]);
 
   return (
     <div className="min-h-screen bg-background p-6 relative overflow-hidden">
@@ -21,11 +31,17 @@ const Index = () => {
         {/* Header */}
         <header className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-bold mb-2">
-            Create <span className="gradient-text">AI Video</span> Content
+            {project ? (
+              <span className="gradient-text">{project.name}</span>
+            ) : (
+              <>
+                Create <span className="gradient-text">AI Video</span> Content
+              </>
+            )}
           </h1>
           <p className="text-muted-foreground max-w-2xl">
-            Transform your documents, slides, and notebooks into engaging
-            short-form videos, reels, and cinematic content with AI.
+            {project ? "Manage and update your project assets and generation settings." :
+              "Transform your documents, slides, and notebooks into engaging short-form videos, reels, and cinematic content with AI."}
           </p>
         </header>
 
@@ -36,7 +52,7 @@ const Index = () => {
             className="glass-strong rounded-2xl p-6 border border-border/50 animate-fade-in"
             style={{ animationDelay: "0.1s" }}
           >
-            <GenerationPanel selectedVideo={selectedVideo} />
+            <GenerationPanel selectedVideo={selectedVideo} existingProject={project} />
           </div>
 
           {/* Right Panel - Preview */}

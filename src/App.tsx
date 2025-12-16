@@ -37,6 +37,7 @@ const App = () => (
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Index />} />
+                    <Route path="/project/:id" element={<Index />} />
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/history" element={<History />} />
                     <Route path="/settings" element={<Settings />} />

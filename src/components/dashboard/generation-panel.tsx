@@ -7,7 +7,7 @@ import { Wand2, Loader2, ChevronRight, Video, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useCreateProject } from "@/hooks/useProjects";
+import { useCreateProject, useUpdateProject, type Project } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import type { PexelsVideo } from "@/hooks/usePexelsVideos";
 
@@ -20,9 +20,10 @@ interface UploadedFile {
 
 interface GenerationPanelProps {
   selectedVideo?: PexelsVideo | null;
+  existingProject?: Project | null;
 }
 
-export function GenerationPanel({ selectedVideo }: GenerationPanelProps) {
+export function GenerationPanel({ selectedVideo, existingProject }: GenerationPanelProps) {
   const [selectedModel, setSelectedModel] = React.useState("gpt-4o");
   const [contentType, setContentType] = React.useState<"reel" | "short" | "vfx_movie" | "presentation">("reel");
   const [files, setFiles] = React.useState<UploadedFile[]>([]);
@@ -32,9 +33,21 @@ export function GenerationPanel({ selectedVideo }: GenerationPanelProps) {
   const [captions, setCaptions] = React.useState(true);
 
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+
+  React.useEffect(() => {
+    if (existingProject) {
+      setSelectedModel(existingProject.model || "gpt-4o");
+      setContentType((existingProject.content_type as any) || "reel");
+      setDuration([existingProject.target_duration || 30]);
+      setVoiceover(existingProject.voiceover_enabled ?? true);
+      setCaptions(existingProject.captions_enabled ?? true);
+      // Note: user needs to re-upload files or we need to fetch them separately.
+    }
+  }, [existingProject]);
 
   const handleGenerate = async () => {
-    if (files.length === 0) {
+    if (files.length === 0 && !existingProject) { // Allow update without new files if it's existing project? logic debatable
       toast.error("Please upload at least one file");
       return;
     }
@@ -42,21 +55,35 @@ export function GenerationPanel({ selectedVideo }: GenerationPanelProps) {
     setIsGenerating(true);
 
     try {
-      // Create the project in the database
-      await createProject.mutateAsync({
-        name: files[0]?.name?.split(".")[0] || "Untitled Project",
-        content_type: contentType,
-        target_duration: duration[0],
-        model: selectedModel,
-        voiceover_enabled: voiceover,
-        captions_enabled: captions,
-      });
+      if (existingProject) {
+        await updateProject.mutateAsync({
+          id: existingProject.id,
+          updates: {
+            content_type: contentType,
+            target_duration: duration[0],
+            model: selectedModel,
+            voiceover_enabled: voiceover,
+            captions_enabled: captions,
+          }
+        });
+        toast.success("Project updated! Generation will begin shortly.");
+      } else {
+        // Create the project in the database
+        await createProject.mutateAsync({
+          name: files[0]?.name?.split(".")[0] || "Untitled Project",
+          content_type: contentType,
+          target_duration: duration[0],
+          model: selectedModel,
+          voiceover_enabled: voiceover,
+          captions_enabled: captions,
+        });
+        toast.success("Project created! Generation will begin shortly.");
+      }
 
       // Simulate generation process
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      toast.success("Project created! Generation will begin shortly.");
     } catch (error) {
-      toast.error("Failed to create project");
+      toast.error(existingProject ? "Failed to update project" : "Failed to create project");
     } finally {
       setIsGenerating(false);
     }
