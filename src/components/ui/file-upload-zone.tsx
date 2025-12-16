@@ -2,11 +2,13 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Upload, FileText, X, File } from "lucide-react";
 
-interface UploadedFile {
+export interface UploadedFile {
   id: string;
   name: string;
   size: number;
   type: string;
+  file?: File; // Store the original file object
+  file_url?: string; // Store the remote URL if uploaded
 }
 
 interface FileUploadZoneProps {
@@ -48,6 +50,7 @@ export function FileUploadZone({ files, onFilesChange }: FileUploadZoneProps) {
       name: file.name,
       size: file.size,
       type: file.type,
+      file: file, // Keep the file!
     }));
     onFilesChange([...files, ...uploadedFiles]);
   };
