@@ -10,13 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { useCreateProject, useUpdateProject, type Project } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import type { PexelsVideo } from "@/hooks/usePexelsVideos";
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-}
+import { storageService } from "@/services/storage-service";
+import type { UploadedFile } from "@/components/ui/file-upload-zone";
 
 interface GenerationPanelProps {
   selectedVideo?: PexelsVideo | null;
@@ -28,6 +23,7 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
   const [contentType, setContentType] = React.useState<"reel" | "short" | "vfx_movie" | "presentation">("reel");
   const [files, setFiles] = React.useState<UploadedFile[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
   const [duration, setDuration] = React.useState([30]);
   const [voiceover, setVoiceover] = React.useState(true);
   const [captions, setCaptions] = React.useState(true);
@@ -35,19 +31,91 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
 
+  // Load existing project data
   React.useEffect(() => {
-    if (existingProject) {
-      setSelectedModel(existingProject.model || "gpt-4o");
-      setContentType((existingProject.content_type as any) || "reel");
-      setDuration([existingProject.target_duration || 30]);
-      setVoiceover(existingProject.voiceover_enabled ?? true);
-      setCaptions(existingProject.captions_enabled ?? true);
-      // Note: user needs to re-upload files or we need to fetch them separately.
-    }
+    const loadProjectData = async () => {
+      if (existingProject) {
+        setSelectedModel(existingProject.model || "gpt-4o");
+        setContentType((existingProject.content_type as any) || "reel");
+        setDuration([existingProject.target_duration || 30]);
+        setVoiceover(existingProject.voiceover_enabled ?? true);
+        setCaptions(existingProject.captions_enabled ?? true);
+
+        // Fetch project files
+        try {
+          const projectFiles = await storageService.getProjectFiles(existingProject.id);
+          const mappedFiles: UploadedFile[] = projectFiles.map(f => ({
+            id: f.id,
+            name: f.file_name,
+            size: f.file_size,
+            type: f.file_type,
+            file_url: f.file_url
+            // No 'file' object because it's remote
+          }));
+          setFiles(mappedFiles);
+        } catch (err) {
+          console.error("Failed to load project files", err);
+        }
+      } else {
+        // Reset if no project (navigate back to home or new project)
+        setFiles([]);
+        // Don't reset other settings necessarily if we want to keep user preferences, 
+        // but for now let's keep it simple.
+      }
+    };
+    loadProjectData();
   }, [existingProject]);
 
+  const handleFilesChange = async (newFiles: UploadedFile[]) => {
+    // 1. Update local state first to show them in UI
+    setFiles(newFiles);
+
+    // 2. If we have an existing project, auto-upload the new files
+    if (existingProject) {
+      const filesToUpload = newFiles.filter(f => f.file && !f.file_url); // Check for file object and no URL yet
+
+      if (filesToUpload.length > 0) {
+        setIsUploading(true);
+        try {
+          let uploadedCount = 0;
+          await Promise.all(filesToUpload.map(async (f) => {
+            if (f.file) {
+              try {
+                await storageService.uploadFile(existingProject.id, f.file);
+                uploadedCount++;
+              } catch (err) {
+                console.error("Failed to upload file", f.name, err);
+                toast.error(`Failed to upload ${f.name}`);
+              }
+            }
+          }));
+
+          if (uploadedCount > 0) {
+            toast.success(`Uploaded ${uploadedCount} file(s)`);
+            // Refresh from server to get clean state (real IDs, URLs)
+            const projectFiles = await storageService.getProjectFiles(existingProject.id);
+            setFiles(projectFiles.map(pf => ({
+              id: pf.id,
+              name: pf.file_name,
+              size: pf.file_size,
+              type: pf.file_type,
+              file_url: pf.file_url
+            })));
+          }
+        } catch (error) {
+          console.error("Auto-upload error:", error);
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    }
+  };
+
   const handleGenerate = async () => {
-    if (files.length === 0 && !existingProject) { // Allow update without new files if it's existing project? logic debatable
+    // If we have files to upload, we need a project ID.
+    // If no existing project, we must create one first.
+
+    if (files.length === 0) {
       toast.error("Please upload at least one file");
       return;
     }
@@ -55,6 +123,8 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
     setIsGenerating(true);
 
     try {
+      let projectId = existingProject?.id;
+
       if (existingProject) {
         await updateProject.mutateAsync({
           id: existingProject.id,
@@ -66,10 +136,10 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
             captions_enabled: captions,
           }
         });
-        toast.success("Project updated! Generation will begin shortly.");
+        toast.success("Project updated!");
       } else {
         // Create the project in the database
-        await createProject.mutateAsync({
+        const newProject = await createProject.mutateAsync({
           name: files[0]?.name?.split(".")[0] || "Untitled Project",
           content_type: contentType,
           target_duration: duration[0],
@@ -77,12 +147,46 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
           voiceover_enabled: voiceover,
           captions_enabled: captions,
         });
-        toast.success("Project created! Generation will begin shortly.");
+        projectId = newProject.id;
+        toast.success("Project created!");
+      }
+
+      // Handle File Uploads (for new projects mainly)
+      if (projectId) {
+        const params = { projectId }; // capture for closure if needed, mostly for clarity
+
+        // Filter for new files (ones that have the raw File object)
+        const filesToUpload = files.filter(f => f.file);
+
+        if (filesToUpload.length > 0) {
+          toast.info(`Uploading ${filesToUpload.length} file(s)...`);
+
+          await Promise.all(filesToUpload.map(async (f) => {
+            if (f.file) {
+              await storageService.uploadFile(params.projectId, f.file);
+            }
+          }));
+
+          toast.success("Files uploaded successfully");
+
+          // Refresh file list from server to get clean state (ids, urls, etc)
+          const updatedFiles = await storageService.getProjectFiles(projectId);
+          setFiles(updatedFiles.map(f => ({
+            id: f.id,
+            name: f.file_name,
+            size: f.file_size,
+            type: f.file_type,
+            file_url: f.file_url
+          })));
+        }
       }
 
       // Simulate generation process
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.success("Generation started...");
+
     } catch (error) {
+      console.error(error);
       toast.error(existingProject ? "Failed to update project" : "Failed to create project");
     } finally {
       setIsGenerating(false);
@@ -100,8 +204,9 @@ export function GenerationPanel({ selectedVideo, existingProject }: GenerationPa
             1
           </span>
           <h2 className="font-semibold">Upload Content</h2>
+          {isUploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-2" />}
         </div>
-        <FileUploadZone files={files} onFilesChange={setFiles} />
+        <FileUploadZone files={files} onFilesChange={handleFilesChange} />
       </section>
 
       {/* Selected Background Video */}
