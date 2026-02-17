@@ -97,6 +97,10 @@ jobs:
 
       - name: Build application
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder-key' }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL || 'http://localhost:8000' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -109,6 +113,8 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: build
+    # Only run E2E tests if Supabase secrets are configured
+    if: ${{ secrets.VITE_SUPABASE_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -157,3 +163,21 @@ jobs:
           name: cypress-videos
           path: cypress/videos/
           retention-days: 7
+
+  # Summary job that other jobs can depend on for branch protection
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, unit-tests, build]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.typecheck.result }}" != "success" ]] || \
+             [[ "${{ needs.unit-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.build.result }}" != "success" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
+          echo "All required CI checks passed!"
