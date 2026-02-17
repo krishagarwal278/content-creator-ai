@@ -14,6 +14,7 @@
     "build:analyze": "vite build --mode production && npx vite-bundle-visualizer",
     "preview": "vite preview",
     "lint": "./scripts/lint.sh \"src/**/*.{ts,tsx}\" \"*.js\" --max-warnings 0",
+    "lint:ci": "eslint \"src/**/*.{ts,tsx}\" \"*.js\" --max-warnings 100",
     "lint:fix": "./scripts/lint.sh \"src/**/*.{ts,tsx}\" \"*.js\" --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
