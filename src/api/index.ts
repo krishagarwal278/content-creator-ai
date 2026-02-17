@@ -1,0 +1,13 @@
+/**
+ * API Module Barrel Export
+ * Provides centralized access to all API services and Supabase client
+ */
+
+// Supabase Client
+export * from "./client";
+export * from "./types";
+
+// Services
+export * from "./project-service";
+export * from "./storage-service";
+export * from "./video-generation-service";

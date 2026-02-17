@@ -4,13 +4,27 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/lib/*": ["./src/common/utils/*"],
+      "@/hooks/*": ["./src/common/hooks/*"],
+      "@/components/*": ["./src/common/components/*"],
+      "@/api/*": ["./src/api/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/common/*": ["./src/common/*"],
+      "@/styles/*": ["./src/styles/*"]
     },
-    "noImplicitAny": false,
-    "noUnusedParameters": false,
+    /* Type Safety - Inspired by OpenShift Console */
     "skipLibCheck": true,
     "allowJs": true,
-    "noUnusedLocals": false,
-    "strictNullChecks": false
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    /* Source Maps for debugging */
+    "sourceMap": true,
+    /* Decorator support if needed */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   }
 }

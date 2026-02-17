@@ -1,24 +1,25 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Projects from "./pages/Projects";
-import History from "./pages/History";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import { AppLayout } from "./components/layout/AppLayout";
-import { ProjectProvider } from "./context/ProjectContext";
-import { ProjectsExample } from "./components/examples/ProjectsExample";
-import { AuthProvider } from "./context/AuthContext";
-import Auth from "./pages/Auth";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ThemeProvider, CssBaseline } from "@mui/material";
+
+// Common imports
+import { Toaster } from "@/common/components/ui/toaster";
+import { Toaster as Sonner } from "@/common/components/ui/sonner";
+import { TooltipProvider } from "@/common/components/ui/tooltip";
+import { AppLayout } from "@/common/components/layout/AppLayout";
+import NotFound from "@/common/components/NotFound";
+import { ProjectProvider, AuthProvider } from "@/common/contexts";
+import theme from "@/config/theme";
+
+// Feature imports - use full paths to avoid barrel re-export issues
+import DashboardPage from "./features/dashboard/DashboardPage";
+import HistoryPage from "./features/dashboard/HistoryPage";
+import ProjectsPage from "./features/projects/Projects";
+import SettingsPage from "./features/settings/Settings";
+import AuthPage from "./features/auth/Auth";
+import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
-
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import theme from "./theme";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,17 +32,16 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth" element={<AuthPage />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<Index />} />
-                    <Route path="/project/:id" element={<Index />} />
-                    <Route path="/projects" element={<Projects />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/api-test" element={<ProjectsExample />} />
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/project/:id" element={<DashboardPage />} />
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/history" element={<HistoryPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
                   </Route>
                 </Route>
 

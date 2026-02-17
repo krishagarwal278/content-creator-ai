@@ -1,0 +1,15 @@
+# Environment variables for ContentAI
+# Backend API Configuration
+VITE_API_BASE_URL=http://localhost:4000
+
+# Supabase Configuration
+VITE_SUPABASE_PROJECT_ID="bfzlrsefzuwdgiyjodcc"
+VITE_SUPABASE_URL="https://bfzlrsefzuwdgiyjodcc.supabase.co"
+# The client expects VITE_SUPABASE_PUBLISHABLE_KEY, mapping it here:
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmemxyc2VmenV3ZGdpeWpvZGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxMjc4NDIsImV4cCI6MjA4MDcwMzg0Mn0.c1hWs_DBW8uIXcVb-R4V8X_svJBuf6CNZPmpjArlxGE"
+# Keeping the original name just in case other parts use it
+SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmemxyc2VmenV3ZGdpeWpvZGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxMjc4NDIsImV4cCI6MjA4MDcwMzg0Mn0.c1hWs_DBW8uIXcVb-R4V8X_svJBuf6CNZPmpjArlxGE"
+
+# Third Party APIs
+PEXELS_API_KEY="ETP9M0WsT3KbW7h9ZNLi2X3PXpTBGR1ahNMI7viEGQYfUbN4zBpzVT7T"
+OPENAI_API_KEY="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"

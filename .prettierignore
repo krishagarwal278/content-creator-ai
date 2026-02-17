@@ -1,0 +1,26 @@
+# Build outputs
+dist
+build
+coverage
+
+# Dependencies
+node_modules
+.yarn
+
+# Package manager files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Generated files
+*.min.js
+*.min.css
+
+# Config files that shouldn't be formatted
+.env*
+*.md
+
+# IDE/Editor
+.vscode
+.idea
+*.code-workspace

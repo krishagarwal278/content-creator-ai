@@ -1,0 +1,61 @@
+/**
+ * UI Components Barrel Export
+ * Re-exports all shadcn/ui components for cleaner imports
+ */
+
+export * from "./accordion";
+export * from "./alert";
+export * from "./alert-dialog";
+export * from "./aspect-ratio";
+export * from "./avatar";
+export * from "./badge";
+export * from "./breadcrumb";
+export * from "./button";
+export * from "./calendar";
+export * from "./card";
+export * from "./carousel";
+export * from "./chart";
+export * from "./checkbox";
+export * from "./collapsible";
+export * from "./command";
+export * from "./content-type-selector";
+export * from "./context-menu";
+export * from "./dialog";
+export * from "./drawer";
+export * from "./dropdown-menu";
+export * from "./file-upload-zone";
+export * from "./form";
+export * from "./hover-card";
+export * from "./input";
+export * from "./input-otp";
+export * from "./label";
+export * from "./menubar";
+export * from "./model-selector";
+export * from "./navigation-menu";
+export * from "./pagination";
+export * from "./popover";
+export * from "./progress";
+export * from "./radio-group";
+export * from "./resizable";
+export * from "./scroll-area";
+export * from "./select";
+export * from "./separator";
+export * from "./sheet";
+export * from "./sidebar";
+export * from "./skeleton";
+export * from "./slider";
+// Note: sonner exports Toaster which conflicts with toaster.tsx
+// Import directly: import { Toaster as Sonner } from "@/common/components/ui/sonner";
+// export * from "./sonner";
+export * from "./switch";
+export * from "./table";
+export * from "./tabs";
+export * from "./textarea";
+export * from "./toast";
+// Note: toaster exports Toaster which conflicts with sonner.tsx
+// Import directly: import { Toaster } from "@/common/components/ui/toaster";
+// export * from "./toaster";
+export * from "./toggle";
+export * from "./toggle-group";
+export * from "./tooltip";
+export * from "./use-toast";
