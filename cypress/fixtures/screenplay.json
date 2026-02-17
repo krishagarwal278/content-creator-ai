@@ -1,0 +1,78 @@
+{
+  "basic": {
+    "title": "Test Video",
+    "format": "reel",
+    "totalDuration": 30,
+    "scenes": [
+      {
+        "sceneNumber": 1,
+        "duration": 10,
+        "visualDescription": "Opening shot of a modern office",
+        "narration": "Welcome to the future of content creation.",
+        "textOverlay": "Content Creator AI",
+        "transition": "fade"
+      },
+      {
+        "sceneNumber": 2,
+        "duration": 10,
+        "visualDescription": "Person using the app on their phone",
+        "narration": "Create stunning videos in minutes.",
+        "transition": "cut"
+      },
+      {
+        "sceneNumber": 3,
+        "duration": 10,
+        "visualDescription": "Montage of different video types",
+        "narration": "From reels to presentations, we've got you covered.",
+        "transition": "fade"
+      }
+    ],
+    "voiceoverStyle": "professional",
+    "musicSuggestion": "upbeat corporate"
+  },
+  "short": {
+    "title": "Quick Video",
+    "format": "short_video",
+    "totalDuration": 15,
+    "scenes": [
+      {
+        "sceneNumber": 1,
+        "duration": 15,
+        "visualDescription": "Dynamic single shot",
+        "narration": "One powerful message.",
+        "transition": "fade"
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Business Presentation",
+    "format": "presentation",
+    "totalDuration": 120,
+    "scenes": [
+      {
+        "sceneNumber": 1,
+        "duration": 30,
+        "visualDescription": "Title slide with company logo",
+        "narration": "Welcome to our quarterly review.",
+        "textOverlay": "Q4 2024 Review",
+        "transition": "fade"
+      },
+      {
+        "sceneNumber": 2,
+        "duration": 45,
+        "visualDescription": "Chart showing growth metrics",
+        "narration": "Our revenue has grown by 25% this quarter.",
+        "transition": "slide"
+      },
+      {
+        "sceneNumber": 3,
+        "duration": 45,
+        "visualDescription": "Team photos and achievements",
+        "narration": "Thanks to our incredible team.",
+        "transition": "fade"
+      }
+    ],
+    "voiceoverStyle": "professional",
+    "musicSuggestion": "corporate ambient"
+  }
+}
