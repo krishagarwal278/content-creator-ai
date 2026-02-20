@@ -1,20 +1,18 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
 import { GenerationPanel } from "./generation-panel";
-import { PreviewPanel } from "./preview-panel";
+import { ChatPanel } from "./chat-panel";
 import { useProjectContext, useAuth } from "@/common/contexts";
 import { useProject } from "@/common/hooks/useProjects";
 import { videoGenerationService, type Screenplay } from "@/api/video-generation-service";
 
 const Index = () => {
   const { id } = useParams();
-  const { selectedVideo, setSelectedVideo, setSelectedProject } = useProjectContext();
+  const { selectedVideo, setSelectedProject } = useProjectContext();
   const { data: project } = useProject(id || null);
   const { user } = useAuth();
   const [screenplay, setScreenplay] = React.useState<Screenplay | null>(null);
   const [generatedProjectId, setGeneratedProjectId] = React.useState<string | null>(null);
-  const [generatedVideoUrl, setGeneratedVideoUrl] = React.useState<string | null>(null);
-  const [generatedVideoId, setGeneratedVideoId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (project) {
@@ -43,25 +41,13 @@ const Index = () => {
     loadProjectScreenplay();
   }, [id]);
 
-  const handleScreenplayGenerated = (
-    newScreenplay: Screenplay,
-    projectId: string,
-    videoUrl?: string,
-    videoId?: string,
-  ) => {
+  const handleScreenplayGenerated = (newScreenplay: Screenplay, projectId: string) => {
     setScreenplay(newScreenplay);
     setGeneratedProjectId(projectId);
-    if (videoUrl) {
-      setGeneratedVideoUrl(videoUrl);
-    }
-    if (videoId) {
-      setGeneratedVideoId(videoId);
-    }
   };
 
-  const handleClearScreenplay = () => {
-    setScreenplay(null);
-    setGeneratedProjectId(null);
+  const handleScreenplayUpdate = (updatedScreenplay: Screenplay) => {
+    setScreenplay(updatedScreenplay);
   };
 
   return (
@@ -108,19 +94,21 @@ const Index = () => {
             />
           </div>
 
-          {/* Right Panel - Preview */}
+          {/* Right Panel - Chat Interface */}
           <div
             className="glass-strong flex animate-fade-in flex-col rounded-2xl border border-border/50 p-6"
-            style={{ animationDelay: "0.2s", height: "max(600px, calc(100vh - 100px))" }}
+            style={{ animationDelay: "0.2s", height: "max(600px, calc(100vh - 140px))" }}
           >
-            <PreviewPanel
-              onSelectVideo={setSelectedVideo}
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="font-semibold">Screenplay Studio</h2>
+              {screenplay && <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />}
+            </div>
+            <ChatPanel
               screenplay={screenplay}
               projectId={generatedProjectId}
-              onClearScreenplay={handleClearScreenplay}
               userId={user?.id}
-              initialVideoUrl={generatedVideoUrl}
-              initialVideoId={generatedVideoId}
+              onScreenplayUpdate={handleScreenplayUpdate}
+              onScreenplayGenerated={handleScreenplayGenerated}
             />
           </div>
         </div>

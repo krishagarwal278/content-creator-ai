@@ -16,24 +16,12 @@ import {
 } from "@/components/ui";
 import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
-import {
-  storageService,
-  generateVideo,
-  generateActualVideo,
-  supabase,
-  type VideoFormat,
-  type Screenplay,
-} from "@/api";
+import { storageService, generateVideo, supabase, type VideoFormat, type Screenplay } from "@/api";
 
 interface GenerationPanelProps {
   selectedVideo?: PexelsVideo | null;
   existingProject?: Project | null;
-  onScreenplayGenerated?: (
-    screenplay: Screenplay,
-    projectId: string,
-    videoUrl?: string,
-    videoId?: string,
-  ) => void;
+  onScreenplayGenerated?: (screenplay: Screenplay, projectId: string) => void;
 }
 
 export function GenerationPanel({
@@ -193,46 +181,10 @@ export function GenerationPanel({
       console.log("Screenplay generated:", result.screenplay);
       console.log("Project ID:", result.projectId);
 
-      toast.success(result.message || "Screenplay generated successfully!");
+      toast.success(result.message || "Screenplay generated! Review and refine it in the chat.");
 
-      // Notify parent component about the generated screenplay
       if (onScreenplayGenerated && result.screenplay) {
         onScreenplayGenerated(result.screenplay, result.projectId);
-      }
-
-      // Step 2: Generate actual video from screenplay
-      toast.info("Generating video...");
-
-      try {
-        const videoResult = await generateActualVideo({
-          projectId: result.projectId,
-          screenplay: result.screenplay,
-          userId: user.id,
-        });
-
-        if (videoResult.success && videoResult.videoUrl) {
-          // Video is ready immediately
-          toast.success("Video generated successfully!");
-          if (onScreenplayGenerated && result.screenplay) {
-            onScreenplayGenerated(result.screenplay, result.projectId, videoResult.videoUrl);
-          }
-        } else if (videoResult.videoId) {
-          // Video is being processed - parent will poll for status
-          toast.info("Video is being processed...");
-          if (onScreenplayGenerated && result.screenplay) {
-            onScreenplayGenerated(
-              result.screenplay,
-              result.projectId,
-              undefined,
-              videoResult.videoId,
-            );
-          }
-        }
-      } catch (videoError) {
-        console.error("Video generation error:", videoError);
-        toast.warning(
-          "Screenplay ready, but video generation is still processing. Check back soon!",
-        );
       }
 
       // Handle file uploads if we have files
@@ -422,12 +374,12 @@ export function GenerationPanel({
         {isGenerating ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Generating...
+            Generating Screenplay...
           </>
         ) : (
           <>
             <Wand2 className="mr-2 h-5 w-5" />
-            Generate Video
+            Generate Screenplay
             <ChevronRight className="ml-auto h-5 w-5" />
           </>
         )}
