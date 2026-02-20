@@ -1,6 +1,7 @@
+import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider, CssBaseline } from "@mui/material";
+import { ThemeProvider as MuiThemeProvider, CssBaseline } from "@mui/material";
 
 // Common imports
 import { Toaster } from "@/common/components/ui/toaster";
@@ -8,8 +9,8 @@ import { Toaster as Sonner } from "@/common/components/ui/sonner";
 import { TooltipProvider } from "@/common/components/ui/tooltip";
 import { AppLayout } from "@/common/components/layout/AppLayout";
 import NotFound from "@/common/components/NotFound";
-import { ProjectProvider, AuthProvider } from "@/common/contexts";
-import theme from "@/config/theme";
+import { ProjectProvider, AuthProvider, ThemeProvider, useTheme } from "@/common/contexts";
+import { createAppTheme } from "@/config/theme";
 
 // Feature imports - use full paths to avoid barrel re-export issues
 import DashboardPage from "./features/dashboard/DashboardPage";
@@ -22,9 +23,12 @@ import { LegalPage } from "./features/legal";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider theme={theme}>
+function AppContent() {
+  const { resolvedTheme } = useTheme();
+  const muiTheme = React.useMemo(() => createAppTheme(resolvedTheme), [resolvedTheme]);
+
+  return (
+    <MuiThemeProvider theme={muiTheme}>
       <CssBaseline />
       <TooltipProvider>
         <AuthProvider>
@@ -54,6 +58,14 @@ const App = () => (
           </ProjectProvider>
         </AuthProvider>
       </TooltipProvider>
+    </MuiThemeProvider>
+  );
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme="dark">
+      <AppContent />
     </ThemeProvider>
   </QueryClientProvider>
 );

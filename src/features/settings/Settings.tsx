@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/common/contexts";
+import { useAuth, useTheme } from "@/common/contexts";
 import { useSearchParams } from "react-router-dom";
 
 const defaultPreferences: UserPreferences = DEFAULT_PREFERENCES;
@@ -96,6 +96,7 @@ function SettingRow({
 
 const Settings = () => {
   const { user, signOut } = useAuth();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "account";
 
@@ -726,31 +727,88 @@ const Settings = () => {
           <TabsContent value="appearance">
             <div className="glass-strong space-y-6 rounded-2xl border border-border/50 p-6">
               <SettingsSection title="Theme" description="Choose your preferred color scheme">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {[
-                    { value: "light", icon: Sun, label: "Light" },
-                    { value: "dark", icon: Moon, label: "Dark" },
-                    { value: "system", icon: Monitor, label: "System" },
-                  ].map(({ value, icon: Icon, label }) => (
+                    {
+                      value: "light" as const,
+                      icon: Sun,
+                      label: "Light",
+                      description: "Clean & bright",
+                    },
+                    {
+                      value: "dark" as const,
+                      icon: Moon,
+                      label: "Dark",
+                      description: "Easy on the eyes",
+                    },
+                    {
+                      value: "system" as const,
+                      icon: Monitor,
+                      label: "System",
+                      description: "Match your OS",
+                    },
+                  ].map(({ value, icon: Icon, label, description }) => (
                     <button
                       key={value}
-                      onClick={() => updatePreference("theme", value as UserPreferences["theme"])}
-                      className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-all ${
-                        preferences.theme === value
-                          ? "border-primary bg-primary/10"
-                          : "border-border/50 hover:border-primary/50"
+                      onClick={() => {
+                        setTheme(value);
+                        updatePreference("theme", value);
+                      }}
+                      className={`group relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all duration-200 ${
+                        currentTheme === value
+                          ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                          : "border-border/50 hover:border-primary/50 hover:bg-muted/50"
                       }`}
                     >
-                      <Icon
-                        className={`h-6 w-6 ${preferences.theme === value ? "text-primary" : "text-muted-foreground"}`}
-                      />
-                      <span
-                        className={`text-sm font-medium ${preferences.theme === value ? "text-primary" : ""}`}
+                      {currentTheme === value && (
+                        <div className="absolute right-2 top-2">
+                          <Check className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                      <div
+                        className={`rounded-full p-3 transition-colors ${
+                          currentTheme === value
+                            ? "bg-primary/20"
+                            : "bg-muted group-hover:bg-primary/10"
+                        }`}
                       >
-                        {label}
-                      </span>
+                        <Icon
+                          className={`h-6 w-6 transition-colors ${
+                            currentTheme === value
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-primary"
+                          }`}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <span
+                          className={`block text-sm font-semibold ${
+                            currentTheme === value ? "text-primary" : ""
+                          }`}
+                        >
+                          {label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{description}</span>
+                      </div>
                     </button>
                   ))}
+                </div>
+
+                {/* Theme Preview */}
+                <div className="mt-6 overflow-hidden rounded-xl border border-border/50">
+                  <div className="border-b border-border/50 bg-muted/30 px-4 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">Preview</span>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/20" />
+                      <div className="flex-1 space-y-1">
+                        <div className="h-3 w-24 rounded bg-foreground/20" />
+                        <div className="h-2 w-32 rounded bg-muted-foreground/20" />
+                      </div>
+                      <div className="h-8 w-16 rounded-md bg-primary" />
+                    </div>
+                  </div>
                 </div>
               </SettingsSection>
 
