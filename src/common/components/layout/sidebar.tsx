@@ -14,13 +14,13 @@ import {
   Divider,
   Stack,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 
 import { useProjectContext, useAuth } from "@/common/contexts";
+import { accountService, DEFAULT_ACCOUNT_INFO } from "@/api";
 import "@/styles/layout.css";
-
-const DRAWER_WIDTH = 260;
 
 interface NavItem {
   icon: React.ElementType;
@@ -39,12 +39,33 @@ export function Sidebar() {
   const { createNewProject } = useProjectContext();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-
   const location = useLocation();
+
+  const [planDisplay, setPlanDisplay] = React.useState("Free Plan");
+
+  // Fetch account info for sidebar plan display
+  React.useEffect(() => {
+    async function loadAccountInfo() {
+      if (!user?.id) {
+        return;
+      }
+      try {
+        const info = await accountService.getAccountInfo(user.id);
+        setPlanDisplay(info.isBetaUser ? "Beta Tester" : info.planName || "Free Plan");
+      } catch {
+        setPlanDisplay(DEFAULT_ACCOUNT_INFO.isBetaUser ? "Beta Tester" : "Free Plan");
+      }
+    }
+    loadAccountInfo();
+  }, [user?.id]);
 
   const handleNewProject = () => {
     createNewProject();
     navigate("/");
+  };
+
+  const handleUserSectionClick = () => {
+    navigate("/settings?tab=account");
   };
 
   return (
@@ -113,20 +134,45 @@ export function Sidebar() {
       {/* User Section */}
       <Divider />
       <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 1 }}>
-          <Avatar className="user-avatar">{user?.email?.charAt(0).toUpperCase() || "G"}</Avatar>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body2" fontWeight="medium" noWrap>
-              {user?.email || "Guest User"}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
-              Free Plan
-            </Typography>
+        <Tooltip title="View account & credits" placement="top">
+          <Box
+            onClick={handleUserSectionClick}
+            sx={{
+              cursor: "pointer",
+              borderRadius: 2,
+              p: 1.5,
+              transition: "background-color 0.2s",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+              },
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Avatar className="user-avatar" sx={{ width: 36, height: 36 }}>
+                {user?.email?.charAt(0).toUpperCase() || "G"}
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" fontWeight="medium" noWrap sx={{ lineHeight: 1.3 }}>
+                  {user?.email?.split("@")[0] || "Guest"}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {planDisplay}
+                </Typography>
+              </Box>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  signOut();
+                }}
+                size="small"
+                title="Log Out"
+                sx={{ opacity: 0.7, "&:hover": { opacity: 1 } }}
+              >
+                <LogOut size={16} />
+              </IconButton>
+            </Stack>
           </Box>
-          <IconButton onClick={() => signOut()} size="small" title="Log Out">
-            <LogOut size={18} />
-          </IconButton>
-        </Stack>
+        </Tooltip>
       </Box>
     </Drawer>
   );

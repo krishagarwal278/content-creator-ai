@@ -18,10 +18,23 @@ import {
   Volume2,
   Subtitles,
   Globe,
+  CreditCard,
+  Zap,
+  TrendingUp,
+  Package,
+  Crown,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, Input, Label, Switch, Badge, Separator } from "@/components/ui";
+import { Button, Input, Label, Switch, Badge, Separator, Progress } from "@/components/ui";
+import {
+  accountService,
+  type AccountInfo,
+  type BillingInfo,
+  type UserPreferences,
+  DEFAULT_PREFERENCES,
+} from "@/api";
 import {
   Select,
   SelectContent,
@@ -32,32 +45,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/common/contexts";
+import { useSearchParams } from "react-router-dom";
 
-interface UserPreferences {
-  defaultModel: string;
-  defaultFormat: string;
-  defaultDuration: number;
-  voiceoverEnabled: boolean;
-  captionsEnabled: boolean;
-  theme: "light" | "dark" | "system";
-  emailNotifications: boolean;
-  generationAlerts: boolean;
-  weeklyDigest: boolean;
-  language: string;
-}
-
-const defaultPreferences: UserPreferences = {
-  defaultModel: "gpt-4o",
-  defaultFormat: "reel",
-  defaultDuration: 60,
-  voiceoverEnabled: true,
-  captionsEnabled: true,
-  theme: "dark",
-  emailNotifications: true,
-  generationAlerts: true,
-  weeklyDigest: false,
-  language: "en",
-};
+const defaultPreferences: UserPreferences = DEFAULT_PREFERENCES;
 
 function SettingsSection({
   title,
@@ -106,21 +96,82 @@ function SettingRow({
 
 const Settings = () => {
   const { user, signOut } = useAuth();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "account";
+
   const [preferences, setPreferences] = React.useState<UserPreferences>(defaultPreferences);
   const [isSaving, setIsSaving] = React.useState(false);
   const [hasChanges, setHasChanges] = React.useState(false);
 
-  // Load preferences from localStorage on mount
+  // Account & Billing state
+  const [accountInfo, setAccountInfo] = React.useState<AccountInfo | null>(null);
+  const [billingInfo, setBillingInfo] = React.useState<BillingInfo | null>(null);
+  const [accountLoading, setAccountLoading] = React.useState(true);
+  const [accountError, setAccountError] = React.useState<string | null>(null);
+
+  // Load preferences from backend (with localStorage fallback)
   React.useEffect(() => {
-    const saved = localStorage.getItem("userPreferences");
-    if (saved) {
+    async function loadPreferences() {
+      if (!user?.id) {
+        // Fall back to localStorage if no user
+        const saved = localStorage.getItem("userPreferences");
+        if (saved) {
+          try {
+            setPreferences(JSON.parse(saved));
+          } catch {
+            // Invalid JSON, use defaults
+          }
+        }
+        return;
+      }
+
       try {
-        setPreferences(JSON.parse(saved));
+        const prefs = await accountService.getPreferences(user.id);
+        setPreferences(prefs);
+        // Also save to localStorage as cache
+        localStorage.setItem("userPreferences", JSON.stringify(prefs));
       } catch {
-        // Invalid JSON, use defaults
+        // Fall back to localStorage
+        const saved = localStorage.getItem("userPreferences");
+        if (saved) {
+          try {
+            setPreferences(JSON.parse(saved));
+          } catch {
+            // Invalid JSON, use defaults
+          }
+        }
       }
     }
-  }, []);
+
+    loadPreferences();
+  }, [user?.id]);
+
+  // Load account and billing info
+  React.useEffect(() => {
+    async function loadAccountData() {
+      if (!user?.id) {
+        return;
+      }
+
+      setAccountLoading(true);
+      setAccountError(null);
+
+      try {
+        const [account, billing] = await Promise.all([
+          accountService.getAccountInfo(user.id),
+          accountService.getBillingInfo(user.id),
+        ]);
+        setAccountInfo(account);
+        setBillingInfo(billing);
+      } catch (err) {
+        setAccountError(err instanceof Error ? err.message : "Failed to load account info");
+      } finally {
+        setAccountLoading(false);
+      }
+    }
+
+    loadAccountData();
+  }, [user?.id]);
 
   const updatePreference = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
@@ -130,16 +181,24 @@ const Settings = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save to localStorage
+      // Always save to localStorage as cache
       localStorage.setItem("userPreferences", JSON.stringify(preferences));
 
-      // In a real app, you'd also save to backend
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Save to backend if user is logged in
+      if (user?.id) {
+        await accountService.updatePreferences(user.id, preferences);
+      }
 
       setHasChanges(false);
       toast.success("Settings saved successfully");
-    } catch {
-      toast.error("Failed to save settings");
+    } catch (err) {
+      // Still mark as saved if localStorage worked
+      setHasChanges(false);
+      toast.error(
+        err instanceof Error && err.message.includes("backend")
+          ? "Settings saved locally (backend unavailable)"
+          : "Failed to save settings",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -195,8 +254,16 @@ const Settings = () => {
           )}
         </header>
 
-        <Tabs defaultValue="profile" className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <TabsList className="glass-strong mb-6 grid w-full grid-cols-4 lg:flex lg:w-auto lg:grid-cols-none">
+        <Tabs
+          defaultValue={defaultTab}
+          className="animate-fade-in"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <TabsList className="glass-strong mb-6 grid w-full grid-cols-5 lg:flex lg:w-auto lg:grid-cols-none">
+            <TabsTrigger value="account" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Account</span>
+            </TabsTrigger>
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Profile</span>
@@ -214,6 +281,227 @@ const Settings = () => {
               <span className="hidden sm:inline">Appearance</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Account & Billing Tab */}
+          <TabsContent value="account">
+            <div className="space-y-6">
+              {accountLoading ? (
+                <div className="glass-strong flex items-center justify-center rounded-2xl border border-border/50 p-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : accountError ? (
+                <div className="glass-strong rounded-2xl border border-border/50 p-6">
+                  <div className="flex items-center gap-3 text-yellow-500">
+                    <AlertCircle className="h-5 w-5" />
+                    <p>{accountError}</p>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Account features will be available when the backend is connected.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Credits Overview Card */}
+                  <div className="glass-strong rounded-2xl border border-border/50 p-6">
+                    <div className="mb-6 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-primary/20 p-3">
+                          <Zap className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold">Video Credits</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {accountInfo?.planName || "Free Trial"}
+                          </p>
+                        </div>
+                      </div>
+                      {accountInfo?.isBetaUser && (
+                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                          <Crown className="mr-1 h-3 w-3" />
+                          Beta Tester
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Videos Remaining - User-friendly display */}
+                    <div className="mb-4 text-center">
+                      <div className="text-5xl font-bold text-primary">
+                        {accountInfo?.videos.remaining ?? 0}
+                      </div>
+                      <p className="text-muted-foreground">videos remaining</p>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-2">
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {accountInfo?.videos.used ?? 0} used
+                        </span>
+                        <span className="text-muted-foreground">
+                          {accountInfo?.videos.total ?? 0} total
+                        </span>
+                      </div>
+                      <Progress
+                        value={
+                          accountInfo
+                            ? (accountInfo.videos.used / accountInfo.videos.total) * 100
+                            : 0
+                        }
+                        className="h-3"
+                      />
+                    </div>
+
+                    {/* Period Info */}
+                    {accountInfo?.limits && (
+                      <p className="text-center text-xs text-muted-foreground">
+                        {accountInfo.limits.maxVideosPerPeriod} videos per{" "}
+                        {accountInfo.limits.periodDays} day period
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="glass rounded-xl border border-border/50 p-4 text-center">
+                      <TrendingUp className="mx-auto mb-2 h-5 w-5 text-green-400" />
+                      <div className="text-2xl font-bold">{accountInfo?.videos.used ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Videos Created</p>
+                    </div>
+                    <div className="glass rounded-xl border border-border/50 p-4 text-center">
+                      <Zap className="mx-auto mb-2 h-5 w-5 text-yellow-400" />
+                      <div className="text-2xl font-bold">{accountInfo?.credits.used ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Credits Used</p>
+                    </div>
+                    <div className="glass rounded-xl border border-border/50 p-4 text-center">
+                      <Package className="mx-auto mb-2 h-5 w-5 text-blue-400" />
+                      <div className="text-2xl font-bold">
+                        {accountInfo?.credits.remaining ?? 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Credits Left</p>
+                    </div>
+                  </div>
+
+                  {/* Subscription Plans */}
+                  <div className="glass-strong rounded-2xl border border-border/50 p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Subscription Plans</h3>
+                      {billingInfo?.isBetaMode && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Coming Soon
+                        </Badge>
+                      )}
+                    </div>
+
+                    {billingInfo?.betaMessage && (
+                      <p className="mb-4 text-sm text-muted-foreground">
+                        {billingInfo.betaMessage}
+                      </p>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {billingInfo?.plans.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className={`relative rounded-xl border p-4 transition-all ${
+                            plan.isCurrent
+                              ? "border-green-500/50 bg-green-500/5"
+                              : plan.popular
+                                ? "border-primary bg-primary/5"
+                                : "border-border/50 hover:border-primary/50"
+                          } ${billingInfo.isBetaMode && !plan.isCurrent ? "opacity-60" : ""}`}
+                        >
+                          {plan.isCurrent && (
+                            <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-green-500">
+                              Current
+                            </Badge>
+                          )}
+                          {plan.popular && !plan.isCurrent && (
+                            <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
+                              Popular
+                            </Badge>
+                          )}
+                          <h4 className="mb-1 font-semibold">{plan.name}</h4>
+                          <div className="mb-2">
+                            <span className="text-2xl font-bold">
+                              {plan.price === 0 ? "Free" : `$${plan.priceMonthly}`}
+                            </span>
+                            {plan.priceMonthly > 0 && (
+                              <span className="text-sm text-muted-foreground">/mo</span>
+                            )}
+                          </div>
+                          <p className="mb-3 text-sm text-muted-foreground">
+                            {plan.videosIncluded} videos/month
+                          </p>
+                          <Button
+                            variant={
+                              plan.isCurrent ? "secondary" : plan.popular ? "default" : "outline"
+                            }
+                            size="sm"
+                            className="w-full"
+                            disabled={billingInfo.isBetaMode || plan.isCurrent}
+                          >
+                            {plan.isCurrent ? "Current Plan" : "Upgrade"}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Credit Packages */}
+                  <div className="glass-strong rounded-2xl border border-border/50 p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Buy More Credits</h3>
+                      {billingInfo?.isBetaMode && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Coming Soon
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {billingInfo?.packages.map((pkg) => (
+                        <div
+                          key={pkg.id}
+                          className={`relative rounded-xl border p-4 transition-all ${
+                            pkg.popular
+                              ? "border-primary bg-primary/5"
+                              : "border-border/50 hover:border-primary/50"
+                          } ${billingInfo.isBetaMode ? "opacity-60" : ""}`}
+                        >
+                          {pkg.popular && (
+                            <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
+                              Best Value
+                            </Badge>
+                          )}
+                          <h4 className="mb-1 font-semibold">{pkg.name}</h4>
+                          <div className="mb-1">
+                            <span className="text-xl font-bold">${pkg.price}</span>
+                          </div>
+                          <p className="mb-1 text-sm text-muted-foreground">{pkg.videos} videos</p>
+                          <p className="mb-2 text-xs text-green-400">
+                            ${pkg.pricePerVideo.toFixed(2)}/video
+                          </p>
+                          {pkg.savings > 0 && (
+                            <Badge variant="secondary" className="mb-3">
+                              Save {pkg.savings}%
+                            </Badge>
+                          )}
+                          <Button
+                            variant={pkg.popular ? "default" : "outline"}
+                            size="sm"
+                            className="w-full"
+                            disabled={billingInfo.isBetaMode}
+                          >
+                            Buy
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
 
           {/* Profile Tab */}
           <TabsContent value="profile">
