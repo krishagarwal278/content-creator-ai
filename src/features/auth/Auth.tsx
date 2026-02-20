@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/api/client";
 import {
@@ -12,6 +12,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  Checkbox,
 } from "@/components/ui";
 
 const Auth = () => {
@@ -21,6 +22,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const navigate = useNavigate();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -122,9 +124,41 @@ const Auth = () => {
                 minLength={6}
               />
             </div>
+            {isSignUp && (
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  className="mt-1"
+                />
+                <Label htmlFor="terms" className="text-sm font-normal leading-relaxed">
+                  I agree to the{" "}
+                  <Link
+                    to="/legal/terms-of-service"
+                    className="text-primary hover:underline"
+                    target="_blank"
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    to="/legal/privacy-policy"
+                    className="text-primary hover:underline"
+                    target="_blank"
+                  >
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button className="w-full" type="submit" disabled={loading}>
+            <Button
+              className="w-full"
+              type="submit"
+              disabled={loading || (isSignUp && !agreedToTerms)}
+            >
               {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
             </Button>
             <div className="text-center text-sm">

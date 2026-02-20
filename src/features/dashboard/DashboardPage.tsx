@@ -4,7 +4,7 @@ import { GenerationPanel } from "./generation-panel";
 import { PreviewPanel } from "./preview-panel";
 import { useProjectContext, useAuth } from "@/common/contexts";
 import { useProject } from "@/common/hooks/useProjects";
-import type { Screenplay } from "@/api/video-generation-service";
+import { videoGenerationService, type Screenplay } from "@/api/video-generation-service";
 
 const Index = () => {
   const { id } = useParams();
@@ -21,6 +21,27 @@ const Index = () => {
       setSelectedProject(project);
     }
   }, [project, setSelectedProject]);
+
+  // Load existing screenplay when viewing a project
+  React.useEffect(() => {
+    async function loadProjectScreenplay() {
+      if (!id) {
+        return;
+      }
+
+      try {
+        const screenplays = await videoGenerationService.getProjectScreenplays(id);
+        if (screenplays.length > 0) {
+          setScreenplay(screenplays[0].screenplay);
+          setGeneratedProjectId(id);
+        }
+      } catch (error) {
+        console.error("Failed to load project screenplay:", error);
+      }
+    }
+
+    loadProjectScreenplay();
+  }, [id]);
 
   const handleScreenplayGenerated = (
     newScreenplay: Screenplay,

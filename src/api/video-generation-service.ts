@@ -180,9 +180,289 @@ export async function getVideoStatus(videoId: string): Promise<VideoStatusRespon
   }
 }
 
+export interface StoredScreenplay {
+  id: string;
+  chatId: string;
+  userId: string;
+  screenplay: Screenplay;
+  createdAt: string;
+}
+
+export async function getProjectScreenplays(projectId: string): Promise<StoredScreenplay[]> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/video/project/${projectId}/screenplays`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch screenplays" }));
+      throw new Error(error.message || "Failed to fetch screenplays");
+    }
+
+    const data = await response.json();
+    return data.data?.screenplays || [];
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function getAllScreenplays(userId?: string): Promise<StoredScreenplay[]> {
+  try {
+    const url = userId
+      ? `${BACKEND_URL}/api/v1/video/screenplays?userId=${userId}`
+      : `${BACKEND_URL}/api/v1/video/screenplays`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch screenplays" }));
+      throw new Error(error.message || "Failed to fetch screenplays");
+    }
+
+    const data = await response.json();
+    return data.data?.screenplays || [];
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+// =============================================================================
+// Generation History API
+// =============================================================================
+
+export type GenerationType = "screenplay" | "video" | "enhancement";
+export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface GenerationHistoryEntry {
+  id: string;
+  user_id: string;
+  project_id: string | null;
+  project_name: string;
+  generation_type: GenerationType;
+  status: GenerationStatus;
+  credits_used: number;
+  format: VideoFormat;
+  duration: number;
+  thumbnail_url: string | null;
+  video_url: string | null;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface GenerationHistoryResponse {
+  entries: GenerationHistoryEntry[];
+  totalGenerations: number;
+  totalCreditsUsed: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface VideoHistoryResponse {
+  videos: GenerationHistoryEntry[];
+  total: number;
+  hasMore: boolean;
+  page: number;
+  pageSize: number;
+}
+
+export interface GenerationStats {
+  totalVideos: number;
+  totalScreenplays: number;
+  completedVideos: number;
+  failedVideos: number;
+  totalCreditsUsed: number;
+}
+
+export interface GetHistoryOptions {
+  page?: number;
+  pageSize?: number;
+  type?: GenerationType;
+  status?: GenerationStatus;
+}
+
+/**
+ * Get generation history for a user
+ */
+export async function getGenerationHistory(
+  userId: string,
+  options: GetHistoryOptions = {},
+): Promise<GenerationHistoryResponse> {
+  try {
+    const params = new URLSearchParams({ userId });
+    if (options.page) {
+      params.append("page", String(options.page));
+    }
+    if (options.pageSize) {
+      params.append("pageSize", String(options.pageSize));
+    }
+    if (options.type) {
+      params.append("type", options.type);
+    }
+    if (options.status) {
+      params.append("status", options.status);
+    }
+
+    const response = await fetch(`${BACKEND_URL}/api/v1/history?${params}`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch history" }));
+      throw new Error(error.message || "Failed to fetch history");
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get video generation history (for gallery view)
+ */
+export async function getVideoHistory(
+  userId: string,
+  page: number = 1,
+  pageSize: number = 12,
+): Promise<VideoHistoryResponse> {
+  try {
+    const params = new URLSearchParams({
+      userId,
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    const response = await fetch(`${BACKEND_URL}/api/v1/history/videos?${params}`);
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to fetch video history" }));
+      throw new Error(error.message || "Failed to fetch video history");
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get recent generations for dashboard
+ */
+export async function getRecentGenerations(
+  userId: string,
+  limit: number = 5,
+): Promise<GenerationHistoryEntry[]> {
+  try {
+    const params = new URLSearchParams({
+      userId,
+      limit: String(limit),
+    });
+
+    const response = await fetch(`${BACKEND_URL}/api/v1/history/recent?${params}`);
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to fetch recent generations" }));
+      throw new Error(error.message || "Failed to fetch recent generations");
+    }
+
+    const data = await response.json();
+    return data.data?.recent || [];
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get generation statistics for a user
+ */
+export async function getGenerationStats(userId: string): Promise<GenerationStats> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/history/stats?userId=${userId}`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch stats" }));
+      throw new Error(error.message || "Failed to fetch stats");
+    }
+
+    const data = await response.json();
+    return data.data?.stats;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get a single history entry by ID
+ */
+export async function getHistoryEntry(entryId: string): Promise<GenerationHistoryEntry | null> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/history/${entryId}`);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      const error = await response.json().catch(() => ({ message: "Failed to fetch entry" }));
+      throw new Error(error.message || "Failed to fetch entry");
+    }
+
+    const data = await response.json();
+    return data.data?.entry || null;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
 export const videoGenerationService = {
   generateVideo,
   enhanceScreenplay,
   generateActualVideo,
   getVideoStatus,
+  getProjectScreenplays,
+  getAllScreenplays,
+  getGenerationHistory,
+  getVideoHistory,
+  getRecentGenerations,
+  getGenerationStats,
+  getHistoryEntry,
 };

@@ -18,6 +18,7 @@ import ProjectsPage from "./features/projects/Projects";
 import SettingsPage from "./features/settings/Settings";
 import AuthPage from "./features/auth/Auth";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
+import { LegalPage } from "./features/legal";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/legal/:type" element={<LegalPage />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppLayout />}>

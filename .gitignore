@@ -67,3 +67,7 @@ Thumbs.db
 
 # Husky
 .husky/_
+
+# Legal documents (customize locally)
+public/legal/privacy-policy.md
+public/legal/terms-of-service.md

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import {
   ModelSelector,
+  VideoModelSelector,
   ContentTypeSelector,
   FileUploadZone,
   Button,
@@ -13,7 +14,7 @@ import {
   Textarea,
   type UploadedFile,
 } from "@/components/ui";
-import { useCreateProject, useUpdateProject, type Project } from "@/common/hooks/useProjects";
+import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
 import {
   storageService,
@@ -41,6 +42,7 @@ export function GenerationPanel({
   onScreenplayGenerated,
 }: GenerationPanelProps) {
   const [selectedModel, setSelectedModel] = React.useState("gpt-4o");
+  const [selectedVideoModel, setSelectedVideoModel] = React.useState("fal-ai/ovi");
   const [contentType, setContentType] = React.useState<
     "reel" | "short" | "vfx_movie" | "presentation"
   >("reel");
@@ -51,9 +53,6 @@ export function GenerationPanel({
   const [voiceover, setVoiceover] = React.useState(true);
   const [captions, setCaptions] = React.useState(true);
   const [topic, setTopic] = React.useState("");
-
-  const createProject = useCreateProject();
-  const updateProject = useUpdateProject();
 
   // Load existing project data
   React.useEffect(() => {
@@ -342,9 +341,31 @@ export function GenerationPanel({
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
             4
           </span>
-          <h2 className="font-semibold">AI Model</h2>
+          <h2 className="font-semibold">AI Models</h2>
         </div>
-        <ModelSelector value={selectedModel} onValueChange={setSelectedModel} />
+
+        <div className="space-y-4">
+          {/* Screenplay AI Model */}
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-sm font-medium">Screenplay AI</span>
+              <span className="text-xs text-muted-foreground">Script & narration generation</span>
+            </div>
+            <ModelSelector value={selectedModel} onValueChange={setSelectedModel} />
+          </div>
+
+          {/* Video Generation Model */}
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-sm font-medium">Video Generation</span>
+              <span className="text-xs text-muted-foreground">Text-to-video rendering</span>
+            </div>
+            <VideoModelSelector value={selectedVideoModel} onValueChange={setSelectedVideoModel} />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Supports speech tags, ambient audio, and vertical/horizontal/square formats
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Settings */}
@@ -365,7 +386,7 @@ export function GenerationPanel({
             value={duration}
             onValueChange={setDuration}
             min={15}
-            max={180}
+            max={90}
             step={5}
             className="w-full"
           />
