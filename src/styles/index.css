@@ -6,78 +6,90 @@
 
 @layer base {
   /* ============================================================================
-   * LIGHT THEME (Default)
-   * Inspired by Linear, Vercel, and Figma - clean, professional, subtle
+   * LIGHT THEME - Optimized for Instant User Adoption
+   * Color Psychology: Trust (blue-gray), Warmth (cream tints), Energy (teal)
+   * Inspired by Stripe, Linear, Notion - proven high-conversion designs
    * ============================================================================ */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    /* Soft blue-gray background - calming, professional, reduces cognitive load
+       #f7f8fa - slight blue undertone builds subconscious trust */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
 
+    /* Warm white cards - inviting, clean, draws focus to content
+       Pure white with subtle warmth feels premium */
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary: Teal/Cyan accent - consistent with dark theme */
-    --primary: 174 72% 40%;
+    /* Primary: Vibrant teal - innovation, creativity, action
+       Slightly more saturated for light mode to pop against soft bg */
+    --primary: 172 66% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
+    /* Secondary: Soft lavender-gray - modern, creative, approachable */
+    --secondary: 240 10% 96%;
+    --secondary-foreground: 222 47% 35%;
 
+    /* Muted: Warm gray - comfortable, easy on eyes */
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    /* Accent: Purple/Violet - consistent with dark theme */
-    --accent: 280 65% 55%;
+    /* Accent: Rich violet - creativity, premium feel, excitement */
+    --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Borders: Subtle blue-gray - cohesive, not harsh */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 174 72% 40%;
+    --ring: 172 66% 45%;
 
     --radius: 0.75rem;
 
-    /* Custom design tokens - Light theme */
+    /* Gradient: Teal to violet - energy, creativity, forward-thinking */
     --gradient-primary: linear-gradient(
       135deg,
-      hsl(174 72% 40%) 0%,
-      hsl(190 80% 35%) 50%,
-      hsl(280 65% 55%) 100%
+      hsl(172 66% 45%) 0%,
+      hsl(200 80% 50%) 50%,
+      hsl(262 83% 58%) 100%
     );
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 20% 99%) 100%);
     --gradient-glass: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 255, 255, 0.7) 100%
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(255, 255, 255, 0.92) 100%
     );
     --gradient-border: linear-gradient(
       135deg,
-      hsl(174 72% 40% / 0.2) 0%,
-      hsl(280 65% 55% / 0.2) 100%
+      hsl(172 66% 45% / 0.25) 0%,
+      hsl(262 83% 58% / 0.25) 100%
     );
 
-    --shadow-glow: 0 0 60px hsl(174 72% 40% / 0.08);
-    --shadow-card: 0 1px 3px hsl(220 13% 91% / 0.5), 0 4px 12px hsl(220 13% 91% / 0.15);
+    /* Shadows: Soft blue-tinted - depth without harshness */
+    --shadow-glow: 0 0 40px hsl(172 66% 45% / 0.12);
+    --shadow-card:
+      0 1px 2px hsl(220 60% 50% / 0.03), 0 2px 4px hsl(220 60% 50% / 0.03),
+      0 4px 8px hsl(220 60% 50% / 0.03);
     --shadow-elevated:
-      0 4px 6px -1px hsl(220 13% 91% / 0.2), 0 10px 24px -3px hsl(220 13% 91% / 0.15);
+      0 4px 6px -1px hsl(220 60% 50% / 0.05), 0 10px 15px -3px hsl(220 60% 50% / 0.08);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    /* Sidebar - Light */
-    --sidebar-background: 220 14% 98%;
-    --sidebar-foreground: 224 71% 4%;
-    --sidebar-primary: 174 72% 40%;
+    /* Sidebar: Subtle cream-white - warm, welcoming, premium */
+    --sidebar-background: 40 20% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 172 66% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 93%;
-    --sidebar-accent-foreground: 224 71% 4%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 174 72% 40%;
+    --sidebar-accent: 220 14% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 92%;
+    --sidebar-ring: 172 66% 45%;
   }
 
   /* ============================================================================
@@ -189,8 +201,10 @@
   }
 
   :not(.dark) .glass {
-    background: hsl(var(--card) / 0.85);
-    box-shadow: 0 1px 3px hsl(220 13% 91% / 0.3);
+    background: hsl(var(--card) / 0.92);
+    box-shadow:
+      0 1px 2px hsl(220 60% 50% / 0.04),
+      0 2px 4px hsl(220 60% 50% / 0.04);
   }
 
   .glass-strong {
@@ -203,8 +217,10 @@
   }
 
   :not(.dark) .glass-strong {
-    background: hsl(var(--card) / 0.95);
-    box-shadow: 0 2px 8px hsl(220 13% 91% / 0.4);
+    background: hsl(var(--card));
+    box-shadow:
+      0 1px 3px hsl(220 60% 50% / 0.04),
+      0 4px 12px hsl(220 60% 50% / 0.06);
   }
 
   /* Gradient text */

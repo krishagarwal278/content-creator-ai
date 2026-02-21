@@ -87,7 +87,7 @@ const LandingPage = () => {
               onClick={() => setShowBetaLogin(true)}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Beta Login
+              Login
             </button>
             <Button
               data-testid="join-beta-btn"

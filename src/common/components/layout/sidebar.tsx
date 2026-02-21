@@ -78,11 +78,9 @@ export function Sidebar() {
           </Box>
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
-              ContentAI
+              Veya
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Video Generator
-            </Typography>
+            <Typography variant="caption" color="text.secondary"></Typography>
           </Box>
         </Stack>
       </Box>
