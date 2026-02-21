@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   User,
   Bell,
@@ -204,10 +205,13 @@ const Settings = () => {
     }
   };
 
+  const navigate = useNavigate();
+
   const handleSignOut = async () => {
     try {
       await signOut();
       toast.success("Signed out successfully");
+      navigate("/");
     } catch {
       toast.error("Failed to sign out");
     }

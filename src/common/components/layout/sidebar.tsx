@@ -160,9 +160,10 @@ export function Sidebar() {
                 </Typography>
               </Box>
               <IconButton
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  signOut();
+                  await signOut();
+                  navigate("/");
                 }}
                 size="small"
                 title="Log Out"
