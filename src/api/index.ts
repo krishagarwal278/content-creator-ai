@@ -12,3 +12,4 @@ export * from "./project-service";
 export * from "./storage-service";
 export * from "./video-generation-service";
 export * from "./account-service";
+export * from "./interest-service";

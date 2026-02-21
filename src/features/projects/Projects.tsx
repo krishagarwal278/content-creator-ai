@@ -487,7 +487,7 @@ const Projects = () => {
     try {
       const newProject = await createProjectMutation.mutateAsync(data);
       setIsCreateDialogOpen(false);
-      navigate(`/dashboard/${newProject.id}`);
+      navigate(`/project/${newProject.id}`);
     } catch (err) {
       console.error("Failed to create project:", err);
     }
@@ -640,7 +640,7 @@ const Projects = () => {
                   key={project.id}
                   project={project}
                   viewMode={viewMode}
-                  onOpen={() => navigate(`/dashboard/${project.id}`)}
+                  onOpen={() => navigate(`/project/${project.id}`)}
                   onDelete={() => setDeleteProject({ id: project.id, name: project.name })}
                 />
               ))}
@@ -652,7 +652,7 @@ const Projects = () => {
                   key={project.id}
                   project={project}
                   viewMode={viewMode}
-                  onOpen={() => navigate(`/dashboard/${project.id}`)}
+                  onOpen={() => navigate(`/project/${project.id}`)}
                   onDelete={() => setDeleteProject({ id: project.id, name: project.name })}
                 />
               ))}

@@ -12,6 +12,7 @@ import { ProjectProvider, AuthProvider } from "@/common/contexts";
 import theme from "@/config/theme";
 
 // Feature imports - use full paths to avoid barrel re-export issues
+import LandingPage from "./features/landing/LandingPage";
 import DashboardPage from "./features/dashboard/DashboardPage";
 import HistoryPage from "./features/dashboard/HistoryPage";
 import ProjectsPage from "./features/projects/Projects";
@@ -33,12 +34,14 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/legal/:type" element={<LegalPage />} />
 
+                {/* Protected routes - require authentication */}
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/" element={<DashboardPage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/project/:id" element={<DashboardPage />} />
                     <Route path="/projects" element={<ProjectsPage />} />

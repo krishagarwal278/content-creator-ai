@@ -29,7 +29,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: Home, label: "Dashboard", path: "/" },
+  { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: FolderOpen, label: "Projects", path: "/projects" },
   { icon: History, label: "History", path: "/history" },
   { icon: Settings, label: "Settings", path: "/settings" },

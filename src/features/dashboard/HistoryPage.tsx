@@ -402,7 +402,7 @@ const History = () => {
 
   const handleItemClick = (item: GenerationHistoryEntry) => {
     if (item.project_id) {
-      navigate(`/dashboard/${item.project_id}`);
+      navigate(`/project/${item.project_id}`);
     } else if (item.video_url) {
       window.open(item.video_url, "_blank");
     }
