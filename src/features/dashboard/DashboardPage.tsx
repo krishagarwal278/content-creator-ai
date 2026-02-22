@@ -4,7 +4,11 @@ import { GenerationPanel } from "./generation-panel";
 import { ChatPanel } from "./chat-panel";
 import { useProjectContext, useAuth } from "@/common/contexts";
 import { useProject } from "@/common/hooks/useProjects";
-import { videoGenerationService, type Screenplay } from "@/api/video-generation-service";
+import {
+  videoGenerationService,
+  type Screenplay,
+  type VideoFormat,
+} from "@/api/video-generation-service";
 
 const Index = () => {
   const { id } = useParams();
@@ -13,6 +17,8 @@ const Index = () => {
   const { user } = useAuth();
   const [screenplay, setScreenplay] = React.useState<Screenplay | null>(null);
   const [generatedProjectId, setGeneratedProjectId] = React.useState<string | null>(null);
+  const [selectedAiModel, setSelectedAiModel] = React.useState("gpt-4o");
+  const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat>("reel");
 
   React.useEffect(() => {
     if (project) {
@@ -91,6 +97,8 @@ const Index = () => {
               selectedVideo={selectedVideo}
               existingProject={project}
               onScreenplayGenerated={handleScreenplayGenerated}
+              onAiModelChange={setSelectedAiModel}
+              onFormatChange={setSelectedFormat}
             />
           </div>
 
@@ -109,6 +117,8 @@ const Index = () => {
               userId={user?.id}
               onScreenplayUpdate={handleScreenplayUpdate}
               onScreenplayGenerated={handleScreenplayGenerated}
+              aiModel={selectedAiModel}
+              format={selectedFormat}
             />
           </div>
         </div>

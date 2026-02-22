@@ -17,6 +17,7 @@ export interface VideoGenerationRequest {
     thumbnailUrl: string;
   };
   userId: string;
+  documentContent?: string;
 }
 
 export interface ScreenplayScene {
@@ -70,6 +71,28 @@ export interface EnhanceScreenplayRequest {
   projectId: string;
   screenplay: Screenplay;
   feedback: string;
+  aiModel?: string;
+  userId?: string;
+}
+
+export interface ChatIdeateRequest {
+  message: string;
+  userId: string;
+  format?: VideoFormat;
+  aiModel?: string;
+  currentScreenplay?: Screenplay;
+  context?: Array<{ role: "user" | "assistant"; content: string }>;
+}
+
+export interface ChatIdeateResponse {
+  success: boolean;
+  message: string;
+  suggestions?: string[];
+  screenplaySuggestions?: Array<{
+    sceneNumber?: number;
+    suggestion: string;
+    type: "add" | "modify" | "remove" | "general";
+  }>;
 }
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
@@ -78,7 +101,8 @@ export async function generateVideo(
   request: VideoGenerationRequest,
 ): Promise<VideoGenerationResponse> {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/video/generate`, {
+    // Try v1 endpoint first, fall back to legacy endpoint
+    let response = await fetch(`${BACKEND_URL}/api/v1/video/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,12 +110,30 @@ export async function generateVideo(
       body: JSON.stringify(request),
     });
 
+    // If v1 endpoint returns 404, try legacy endpoint
+    if (response.status === 404) {
+      response = await fetch(`${BACKEND_URL}/api/video/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      });
+    }
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to generate video" }));
       throw new Error(error.message || "Failed to generate video");
     }
 
-    return response.json();
+    const json = await response.json();
+
+    // Handle wrapped response (e.g., { data: { ... } } or { success: true, data: { ... } })
+    if (json.data && (json.data.screenplay || json.data.projectId)) {
+      return json.data;
+    }
+
+    return json;
   } catch (error) {
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(
@@ -106,7 +148,59 @@ export async function enhanceScreenplay(
   request: EnhanceScreenplayRequest,
 ): Promise<VideoGenerationResponse> {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/video/enhance-screenplay`, {
+    console.log("Enhancing screenplay with request:", request);
+
+    // Try v1 endpoint first
+    let response = await fetch(`${BACKEND_URL}/api/v1/video/enhance-screenplay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    // If v1 endpoint returns 404, try legacy endpoint
+    if (response.status === 404) {
+      console.log("v1 endpoint not found, trying legacy endpoint");
+      response = await fetch(`${BACKEND_URL}/api/video/enhance-screenplay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      });
+    }
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to enhance screenplay" }));
+      console.error("Enhance screenplay error response:", error);
+      throw new Error(error.message || "Failed to enhance screenplay");
+    }
+
+    const json = await response.json();
+    console.log("Enhance screenplay response:", json);
+
+    // Handle wrapped response
+    if (json.data && (json.data.screenplay || json.data.projectId)) {
+      return json.data;
+    }
+
+    return json;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function chatIdeate(request: ChatIdeateRequest): Promise<ChatIdeateResponse> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/chat/ideate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -115,13 +209,18 @@ export async function enhanceScreenplay(
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Failed to enhance screenplay" }));
-      throw new Error(error.message || "Failed to enhance screenplay");
+      const error = await response.json().catch(() => ({ message: "Failed to get AI response" }));
+      throw new Error(error.message || "Failed to get AI response");
     }
 
-    return response.json();
+    const json = await response.json();
+
+    // Handle wrapped response
+    if (json.data && json.data.message) {
+      return json.data;
+    }
+
+    return json;
   } catch (error) {
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(
@@ -456,6 +555,7 @@ export async function getHistoryEntry(entryId: string): Promise<GenerationHistor
 export const videoGenerationService = {
   generateVideo,
   enhanceScreenplay,
+  chatIdeate,
   generateActualVideo,
   getVideoStatus,
   getProjectScreenplays,

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Button, Input, Progress } from "@/components/ui";
 import { ChatMessage, TypingIndicator, type ChatMessageData } from "./chat-message";
 import { ChatScreenplayCard } from "./chat-screenplay-card";
-import type { Screenplay } from "@/api";
+import type { Screenplay, VideoFormat } from "@/api";
 import { videoGenerationService } from "@/api";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,8 @@ interface ChatPanelProps {
   onScreenplayGenerated?: (screenplay: Screenplay, projectId: string) => void;
   initialVideoUrl?: string | null;
   initialVideoId?: string | null;
+  aiModel?: string;
+  format?: VideoFormat;
 }
 
 const IDEATION_SUGGESTIONS = [
@@ -53,6 +55,8 @@ export function ChatPanel({
   onScreenplayGenerated,
   initialVideoUrl,
   initialVideoId,
+  aiModel = "gpt-4o",
+  format,
 }: ChatPanelProps) {
   const [messages, setMessages] = React.useState<ChatMessageData[]>([]);
   const [inputValue, setInputValue] = React.useState("");
@@ -152,24 +156,50 @@ export function ChatPanel({
   const handleIdeation = async (message: string) => {
     setIsGenerating(true);
 
-    // Simulate AI response for ideation (in production, this could call an AI chat endpoint)
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const context = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    const responses = [
-      `Great idea! For "${message.slice(0, 50)}${message.length > 50 ? "..." : ""}", I'd suggest:\n\n• Start with a strong hook in the first 3 seconds\n• Keep the pacing quick for better engagement\n• End with a clear call-to-action\n\nWhen you're ready, fill in the details on the left and click "Generate Screenplay" to create your video script!`,
-      `I love that concept! Here are some tips:\n\n• Focus on one key message\n• Use visuals that match your narration\n• Consider your target audience\n\nOnce you've refined your idea, use the form on the left to generate your screenplay.`,
-      `That's a solid starting point! Consider:\n\n• What's the main takeaway for viewers?\n• What emotion do you want to evoke?\n• What's your unique angle?\n\nWhen you're happy with the concept, set your preferences on the left and hit "Generate Screenplay"!`,
-    ];
+      const response = await videoGenerationService.chatIdeate({
+        message,
+        userId: userId || "anonymous",
+        format: format || screenplay?.format,
+        aiModel,
+        currentScreenplay: screenplay || undefined,
+        context,
+      });
 
-    const assistantMessage: ChatMessageData = {
-      id: `assistant-${Date.now()}`,
-      role: "assistant",
-      content: responses[Math.floor(Math.random() * responses.length)],
-      timestamp: new Date(),
-    };
+      const assistantMessage: ChatMessageData = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: response.message,
+        timestamp: new Date(),
+      };
 
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsGenerating(false);
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const fallbackResponses = [
+        `Great idea! For "${message.slice(0, 50)}${message.length > 50 ? "..." : ""}", I'd suggest:\n\n• Start with a strong hook in the first 3 seconds\n• Keep the pacing quick for better engagement\n• End with a clear call-to-action\n\nWhen you're ready, fill in the details on the left and click "Generate Screenplay" to create your video script!`,
+        `I love that concept! Here are some tips:\n\n• Focus on one key message\n• Use visuals that match your narration\n• Consider your target audience\n\nOnce you've refined your idea, use the form on the left to generate your screenplay.`,
+        `That's a solid starting point! Consider:\n\n• What's the main takeaway for viewers?\n• What emotion do you want to evoke?\n• What's your unique angle?\n\nWhen you're happy with the concept, set your preferences on the left and hit "Generate Screenplay"!`,
+      ];
+
+      const assistantMessage: ChatMessageData = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)],
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      if (error instanceof Error && !error.message.includes("Cannot connect to backend")) {
+        console.error("Ideation error:", error);
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRefineScreenplay = async (feedback: string) => {
@@ -184,6 +214,8 @@ export function ChatPanel({
         projectId,
         screenplay,
         feedback,
+        aiModel,
+        userId,
       });
 
       if (result.screenplay) {
