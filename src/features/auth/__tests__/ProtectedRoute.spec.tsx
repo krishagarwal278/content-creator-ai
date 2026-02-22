@@ -18,6 +18,7 @@ const renderWithRouter = (initialRoute = "/protected") => {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
       <Routes>
+        <Route path="/" element={<div>Landing Page</div>} />
         <Route path="/auth" element={<div>Auth Page</div>} />
         <Route element={<ProtectedRoute />}>
           <Route path="/protected" element={<div>Protected Content</div>} />
@@ -68,7 +69,7 @@ describe("ProtectedRoute Component", () => {
     expect(screen.getByText("Protected Content")).toBeInTheDocument();
   });
 
-  it("should redirect to /auth when user is not authenticated", () => {
+  it("should redirect to landing page when user is not authenticated", () => {
     mockUseAuth.mockReturnValue({
       session: null,
       user: null,
@@ -79,8 +80,8 @@ describe("ProtectedRoute Component", () => {
 
     // Content should not be rendered
     expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
-    // Should show auth page (redirected)
-    expect(screen.getByText("Auth Page")).toBeInTheDocument();
+    // Should show landing page (redirected to /)
+    expect(screen.getByText("Landing Page")).toBeInTheDocument();
   });
 
   it("should render route with multiple elements when authenticated", () => {

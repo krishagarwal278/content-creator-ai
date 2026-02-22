@@ -170,14 +170,27 @@ describe("Auth Component", () => {
 
       renderWithProviders(<Auth />);
 
-      // Switch to sign up
-      await user.click(screen.getByRole("button", { name: /sign up/i }));
+      // Switch to sign up mode by clicking the toggle link (not the submit button)
+      const toggleLink = screen.getByText("Sign Up");
+      await user.click(toggleLink);
+
+      // Wait for the form to switch
+      await waitFor(() => {
+        expect(screen.getByText("Create Account")).toBeInTheDocument();
+      });
 
       await user.type(screen.getByLabelText(/first name/i), "John");
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.type(screen.getByLabelText(/email/i), "john@example.com");
       await user.type(screen.getByLabelText(/password/i), "password123");
-      await user.click(screen.getByRole("button", { name: /sign up/i }));
+
+      // Check the terms checkbox
+      const termsCheckbox = screen.getByRole("checkbox");
+      await user.click(termsCheckbox);
+
+      // Now click the submit button
+      const submitButton = screen.getByRole("button", { name: /sign up/i });
+      await user.click(submitButton);
 
       await waitFor(() => {
         expect(supabase.auth.signUp).toHaveBeenCalledWith({
@@ -200,13 +213,23 @@ describe("Auth Component", () => {
 
       renderWithProviders(<Auth />);
 
-      // Switch to sign up
-      await user.click(screen.getByRole("button", { name: /sign up/i }));
+      // Switch to sign up mode
+      const toggleLink = screen.getByText("Sign Up");
+      await user.click(toggleLink);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Account")).toBeInTheDocument();
+      });
 
       await user.type(screen.getByLabelText(/first name/i), "John");
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.type(screen.getByLabelText(/email/i), "john@example.com");
       await user.type(screen.getByLabelText(/password/i), "password123");
+
+      // Check the terms checkbox
+      await user.click(screen.getByRole("checkbox"));
+
+      // Submit
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
       await waitFor(() => {
@@ -222,13 +245,23 @@ describe("Auth Component", () => {
 
       renderWithProviders(<Auth />);
 
-      // Switch to sign up
-      await user.click(screen.getByRole("button", { name: /sign up/i }));
+      // Switch to sign up mode
+      const toggleLink = screen.getByText("Sign Up");
+      await user.click(toggleLink);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Account")).toBeInTheDocument();
+      });
 
       await user.type(screen.getByLabelText(/first name/i), "John");
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.type(screen.getByLabelText(/email/i), "john@example.com");
       await user.type(screen.getByLabelText(/password/i), "password123");
+
+      // Check the terms checkbox
+      await user.click(screen.getByRole("checkbox"));
+
+      // Submit
       await user.click(screen.getByRole("button", { name: /sign up/i }));
 
       await waitFor(() => {
