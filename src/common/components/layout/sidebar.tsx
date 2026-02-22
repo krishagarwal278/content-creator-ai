@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Home, FolderOpen, Settings, History, Sparkles, PlusCircle, LogOut } from "lucide-react";
+import { Home, FolderOpen, Settings, History, PlusCircle, LogOut } from "lucide-react";
 import {
   Box,
   Drawer,
@@ -73,12 +73,21 @@ export function Sidebar() {
       {/* Logo */}
       <Box className="sidebar-logo-container">
         <Stack direction="row" alignItems="center" spacing={2}>
-          <Box className="sidebar-logo-icon">
-            <Sparkles size={20} color="white" />
-          </Box>
+          <Box
+            component="img"
+            src="/logo.png"
+            alt="Videaa"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: 2.5,
+              objectFit: "cover",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+          />
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
-              Veya
+              Videaa
             </Typography>
             <Typography variant="caption" color="text.secondary"></Typography>
           </Box>

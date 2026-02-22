@@ -5,17 +5,48 @@
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
+export type UserRole =
+  | "student"
+  | "self_learner"
+  | "educator"
+  | "content_creator"
+  | "professional"
+  | "developer"
+  | "other";
+
+export type EarlyAccessPriority = "very_interested" | "somewhat_interested" | "just_exploring";
+
+export type UseCase =
+  | "create_learning_videos"
+  | "summarize_concepts"
+  | "study_faster"
+  | "build_courses"
+  | "content_creation"
+  | "experimenting";
+
+export type AIExperience = "beginner" | "intermediate" | "advanced" | "power_user";
+
 export interface InterestFormData {
+  // Required fields
   fullName: string;
   email: string;
-  phone?: string;
+  role: string;
+  earlyAccessPriority: string;
+  // Optional fields
+  videoTopics?: string[];
+  useCase?: string;
+  aiExperience?: string;
 }
 
 export interface InterestSubmission {
   id: string;
   fullName: string;
   email: string;
-  phone?: string;
+  role: UserRole;
+  earlyAccessPriority: EarlyAccessPriority;
+  videoTopics?: string[];
+  useCase?: UseCase;
+  aiExperience?: AIExperience;
   createdAt: string;
   status: "pending" | "approved" | "rejected";
   isBetaUser: boolean;
@@ -41,7 +72,11 @@ export async function submitInterestForm(data: InterestFormData): Promise<Intere
       body: JSON.stringify({
         fullName: data.fullName,
         email: data.email,
-        phone: data.phone,
+        role: data.role,
+        earlyAccessPriority: data.earlyAccessPriority,
+        videoTopics: data.videoTopics,
+        useCase: data.useCase,
+        aiExperience: data.aiExperience,
       }),
     });
 
@@ -54,12 +89,16 @@ export async function submitInterestForm(data: InterestFormData): Promise<Intere
     const submission = json.data?.submission || json.submission;
     return {
       id: submission.id,
-      fullName: submission.fullName,
+      fullName: submission.fullName || submission.full_name,
       email: submission.email,
-      phone: submission.phone,
-      createdAt: submission.createdAt,
+      role: submission.role,
+      earlyAccessPriority: submission.earlyAccessPriority || submission.early_access_priority,
+      videoTopics: submission.videoTopics || submission.video_topics,
+      useCase: submission.useCase || submission.use_case,
+      aiExperience: submission.aiExperience || submission.ai_experience,
+      createdAt: submission.createdAt || submission.created_at,
       status: submission.status,
-      isBetaUser: submission.isBetaUser,
+      isBetaUser: submission.isBetaUser || submission.is_beta_user,
     };
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("fetch")) {

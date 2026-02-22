@@ -6,90 +6,89 @@
 
 @layer base {
   /* ============================================================================
-   * LIGHT THEME - Optimized for Instant User Adoption
-   * Color Psychology: Trust (blue-gray), Warmth (cream tints), Energy (teal)
-   * Inspired by Stripe, Linear, Notion - proven high-conversion designs
+   * LIGHT THEME - Evolved to complement Videaa's dark charcoal logo
+   * Cool slate tones create cohesion with logo, teal accent for energy
+   * Inspired by Linear, Vercel, Raycast - modern, professional, tech-forward
    * ============================================================================ */
   :root {
-    /* Soft blue-gray background - calming, professional, reduces cognitive load
-       #f7f8fa - slight blue undertone builds subconscious trust */
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    /* Cool slate background - matches logo's charcoal undertones
+       Creates visual harmony between logo and interface */
+    --background: 210 20% 96%;
+    --foreground: 220 25% 14%;
 
-    /* Warm white cards - inviting, clean, draws focus to content
-       Pure white with subtle warmth feels premium */
+    /* Clean white cards - crisp contrast against slate background */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 25% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 25% 14%;
 
-    /* Primary: Vibrant teal - innovation, creativity, action
-       Slightly more saturated for light mode to pop against soft bg */
-    --primary: 172 66% 45%;
+    /* Primary: Teal/Cyan - matches the existing brand accent
+       Vibrant enough to pop against cool grays */
+    --primary: 168 76% 42%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Soft lavender-gray - modern, creative, approachable */
-    --secondary: 240 10% 96%;
-    --secondary-foreground: 222 47% 35%;
+    /* Secondary: Cool slate - echoes the logo's dark gray */
+    --secondary: 215 16% 94%;
+    --secondary-foreground: 220 20% 30%;
 
-    /* Muted: Warm gray - comfortable, easy on eyes */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* Muted: Slate gray - cohesive with logo palette */
+    --muted: 215 16% 94%;
+    --muted-foreground: 215 14% 45%;
 
-    /* Accent: Rich violet - creativity, premium feel, excitement */
-    --accent: 262 83% 58%;
+    /* Accent: Deep violet - adds depth and creativity */
+    --accent: 258 75% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders: Subtle blue-gray - cohesive, not harsh */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 172 66% 45%;
+    /* Borders: Cool gray - subtle but defined */
+    --border: 214 14% 89%;
+    --input: 214 14% 89%;
+    --ring: 168 76% 42%;
 
     --radius: 0.75rem;
 
-    /* Gradient: Teal to violet - energy, creativity, forward-thinking */
+    /* Gradient: Teal to violet - brand signature */
     --gradient-primary: linear-gradient(
       135deg,
-      hsl(172 66% 45%) 0%,
-      hsl(200 80% 50%) 50%,
-      hsl(262 83% 58%) 100%
+      hsl(168 76% 42%) 0%,
+      hsl(190 75% 45%) 50%,
+      hsl(258 75% 55%) 100%
     );
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 20% 99%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
     --gradient-glass: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.98) 0%,
-      rgba(255, 255, 255, 0.92) 100%
+      rgba(255, 255, 255, 0.97) 0%,
+      rgba(255, 255, 255, 0.9) 100%
     );
     --gradient-border: linear-gradient(
       135deg,
-      hsl(172 66% 45% / 0.25) 0%,
-      hsl(262 83% 58% / 0.25) 100%
+      hsl(168 76% 42% / 0.25) 0%,
+      hsl(258 75% 55% / 0.25) 100%
     );
 
-    /* Shadows: Soft blue-tinted - depth without harshness */
-    --shadow-glow: 0 0 40px hsl(172 66% 45% / 0.12);
+    /* Shadows: Cool slate-tinted for cohesion */
+    --shadow-glow: 0 0 40px hsl(168 76% 42% / 0.12);
     --shadow-card:
-      0 1px 2px hsl(220 60% 50% / 0.03), 0 2px 4px hsl(220 60% 50% / 0.03),
-      0 4px 8px hsl(220 60% 50% / 0.03);
+      0 1px 2px hsl(215 25% 30% / 0.04), 0 2px 4px hsl(215 25% 30% / 0.04),
+      0 4px 8px hsl(215 25% 30% / 0.03);
     --shadow-elevated:
-      0 4px 6px -1px hsl(220 60% 50% / 0.05), 0 10px 15px -3px hsl(220 60% 50% / 0.08);
+      0 4px 6px -1px hsl(215 25% 30% / 0.06), 0 10px 15px -3px hsl(215 25% 30% / 0.08);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    /* Sidebar: Subtle cream-white - warm, welcoming, premium */
-    --sidebar-background: 40 20% 98%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 172 66% 45%;
+    /* Sidebar: Light slate - subtle distinction from main content */
+    --sidebar-background: 210 18% 97%;
+    --sidebar-foreground: 220 25% 14%;
+    --sidebar-primary: 168 76% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 95%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 92%;
-    --sidebar-ring: 172 66% 45%;
+    --sidebar-accent: 215 16% 93%;
+    --sidebar-accent-foreground: 220 25% 14%;
+    --sidebar-border: 214 14% 90%;
+    --sidebar-ring: 168 76% 42%;
   }
 
   /* ============================================================================
@@ -203,8 +202,8 @@
   :not(.dark) .glass {
     background: hsl(var(--card) / 0.92);
     box-shadow:
-      0 1px 2px hsl(220 60% 50% / 0.04),
-      0 2px 4px hsl(220 60% 50% / 0.04);
+      0 1px 2px hsl(215 25% 30% / 0.04),
+      0 2px 4px hsl(215 25% 30% / 0.04);
   }
 
   .glass-strong {
@@ -219,8 +218,8 @@
   :not(.dark) .glass-strong {
     background: hsl(var(--card));
     box-shadow:
-      0 1px 3px hsl(220 60% 50% / 0.04),
-      0 4px 12px hsl(220 60% 50% / 0.06);
+      0 1px 3px hsl(215 25% 30% / 0.05),
+      0 4px 12px hsl(215 25% 30% / 0.06);
   }
 
   /* Gradient text */
