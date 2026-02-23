@@ -326,16 +326,27 @@ describe("GenerationPanel", () => {
 
   describe("Selected Background Video", () => {
     it("should display selected video when provided", () => {
-      // const selectedVideo = {
-      //   id: 123,
-      //   url: "https://example.com/video.mp4",
-      //   image: "https://example.com/thumb.jpg",
-      //   user: "TestUser",
-      //   duration: 30,
-      //   width: 1920,
-      //   height: 1080,
-      //   videoFiles: [{ link: "https://example.com/video.mp4" }],
-      // };
+      const selectedVideo = {
+        id: 123,
+        url: "https://example.com/video.mp4",
+        image: "https://example.com/thumb.jpg",
+        user: "TestUser",
+        duration: 30,
+        width: 1920,
+        height: 1080,
+        videoFiles: [
+          {
+            id: 1,
+            quality: "hd",
+            fileType: "video/mp4",
+            width: 1920,
+            height: 1080,
+            link: "https://example.com/video.mp4",
+          },
+        ],
+      };
+
+      render(<GenerationPanel selectedVideo={selectedVideo} />);
 
       expect(screen.getByText("Selected Background")).toBeInTheDocument();
       expect(screen.getByText("By TestUser")).toBeInTheDocument();

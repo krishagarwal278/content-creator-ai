@@ -13,6 +13,8 @@ import {
 } from "../video-generation-service";
 import { mockScreenplay } from "@/test/test-utils";
 
+const BACKEND_URL = "http://localhost:4000";
+
 describe("video-generation-service", () => {
   const mockFetch = vi.fn();
 
@@ -53,7 +55,7 @@ describe("video-generation-service", () => {
       await generateVideo(validRequest);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/video/generate"),
+        `${BACKEND_URL}/api/v1/video/generate`,
         expect.objectContaining({
           method: "POST",
           headers: {
@@ -129,7 +131,7 @@ describe("video-generation-service", () => {
       await enhanceScreenplay(validRequest);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/video/enhance-screenplay"),
+        `${BACKEND_URL}/api/v1/video/enhance-screenplay`,
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify(validRequest),
@@ -168,7 +170,7 @@ describe("video-generation-service", () => {
       await generateActualVideo(validRequest);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/video/generate-video"),
+        `${BACKEND_URL}/api/video/generate-video`,
         expect.objectContaining({
           method: "POST",
         }),
@@ -207,7 +209,7 @@ describe("video-generation-service", () => {
 
       await getVideoStatus("vid-123");
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/api/video/status/vid-123"));
+      expect(mockFetch).toHaveBeenCalledWith(`${BACKEND_URL}/api/video/status/vid-123`);
     });
 
     it("should return status with progress", async () => {

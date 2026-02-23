@@ -14,6 +14,7 @@ vi.mock("@/api", () => ({
     enhanceScreenplay: vi.fn(),
     generateActualVideo: vi.fn(),
     getVideoStatus: vi.fn(),
+    chatIdeate: vi.fn(),
   },
 }));
 
@@ -292,6 +293,21 @@ describe("ChatPanel", () => {
 
     it("should show typing indicator while processing", async () => {
       const user = userEvent.setup();
+      const { videoGenerationService } = await import("@/api");
+
+      vi.mocked(videoGenerationService.chatIdeate).mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  success: true,
+                  message: "Test response",
+                }),
+              500,
+            ),
+          ),
+      );
 
       render(
         <ChatPanel
@@ -314,6 +330,12 @@ describe("ChatPanel", () => {
 
     it("should add assistant response after user message in ideation mode", async () => {
       const user = userEvent.setup();
+      const { videoGenerationService } = await import("@/api");
+
+      vi.mocked(videoGenerationService.chatIdeate).mockResolvedValue({
+        success: true,
+        message: "I'd suggest starting with a strong hook!",
+      });
 
       render(
         <ChatPanel
