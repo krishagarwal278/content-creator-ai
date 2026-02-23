@@ -18,16 +18,50 @@ import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
 import { storageService, generateVideo, supabase, type VideoFormat, type Screenplay } from "@/api";
 
+async function extractTextFromFile(file: File): Promise<string> {
+  const textTypes = ["text/plain", "text/markdown", "application/json"];
+  const textExtensions = [".txt", ".md", ".markdown", ".json"];
+
+  const isTextFile =
+    textTypes.includes(file.type) ||
+    textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+
+  if (isTextFile) {
+    return await file.text();
+  }
+
+  return "";
+}
+
+async function extractTextFromFiles(files: UploadedFile[]): Promise<string> {
+  const textParts: string[] = [];
+
+  for (const uploadedFile of files) {
+    if (uploadedFile.file) {
+      const text = await extractTextFromFile(uploadedFile.file);
+      if (text.trim()) {
+        textParts.push(`--- ${uploadedFile.name} ---\n${text}`);
+      }
+    }
+  }
+
+  return textParts.join("\n\n");
+}
+
 interface GenerationPanelProps {
   selectedVideo?: PexelsVideo | null;
   existingProject?: Project | null;
   onScreenplayGenerated?: (screenplay: Screenplay, projectId: string) => void;
+  onAiModelChange?: (model: string) => void;
+  onFormatChange?: (format: VideoFormat) => void;
 }
 
 export function GenerationPanel({
   selectedVideo,
   existingProject,
   onScreenplayGenerated,
+  onAiModelChange,
+  onFormatChange,
 }: GenerationPanelProps) {
   const [selectedModel, setSelectedModel] = React.useState("gpt-4o");
   const [selectedVideoModel, setSelectedVideoModel] = React.useState("fal-ai/ovi");
@@ -41,6 +75,21 @@ export function GenerationPanel({
   const [voiceover, setVoiceover] = React.useState(true);
   const [captions, setCaptions] = React.useState(true);
   const [topic, setTopic] = React.useState("");
+
+  const formatMap: Record<string, VideoFormat> = {
+    reel: "reel",
+    short: "short_video",
+    vfx_movie: "vfx_movie",
+    presentation: "presentation",
+  };
+
+  React.useEffect(() => {
+    onAiModelChange?.(selectedModel);
+  }, [selectedModel, onAiModelChange]);
+
+  React.useEffect(() => {
+    onFormatChange?.(formatMap[contentType] || "reel");
+  }, [contentType, onFormatChange]);
 
   // Load existing project data
   React.useEffect(() => {
@@ -144,14 +193,6 @@ export function GenerationPanel({
         return;
       }
 
-      // Map content type to backend format
-      const formatMap: Record<string, VideoFormat> = {
-        reel: "reel",
-        short: "short_video",
-        vfx_movie: "vfx_movie",
-        presentation: "presentation",
-      };
-
       const projectName = files[0]?.name?.split(".")[0] || topic.slice(0, 30) || "Untitled Video";
 
       // Prepare background video if selected
@@ -162,6 +203,9 @@ export function GenerationPanel({
             thumbnailUrl: selectedVideo.image,
           }
         : undefined;
+
+      // Extract text content from uploaded files
+      const documentContent = await extractTextFromFiles(files);
 
       toast.info("Generating screenplay...");
 
@@ -176,14 +220,22 @@ export function GenerationPanel({
         enableCaptions: captions,
         userId: user.id,
         backgroundVideo,
+        documentContent: documentContent || undefined,
       });
 
+      console.log("API Response:", result);
       console.log("Screenplay generated:", result.screenplay);
       console.log("Project ID:", result.projectId);
 
+      if (!result.screenplay) {
+        console.error("No screenplay in response. Full result:", JSON.stringify(result, null, 2));
+        toast.error("Screenplay generation failed - no screenplay returned");
+        return;
+      }
+
       toast.success(result.message || "Screenplay generated! Review and refine it in the chat.");
 
-      if (onScreenplayGenerated && result.screenplay) {
+      if (onScreenplayGenerated) {
         onScreenplayGenerated(result.screenplay, result.projectId);
       }
 
