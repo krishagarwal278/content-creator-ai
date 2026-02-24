@@ -1,5 +1,15 @@
 import * as React from "react";
-import { Wand2, Loader2, ChevronRight, Video, FileText, Play, Sparkles } from "lucide-react";
+import {
+  Wand2,
+  Loader2,
+  ChevronRight,
+  Video,
+  FileText,
+  Play,
+  Sparkles,
+  Presentation,
+  Grid3X3,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -12,6 +22,8 @@ import {
   Label,
   Switch,
   Textarea,
+  SlideshowPreview,
+  SlideshowGrid,
   type UploadedFile,
 } from "@/components/ui";
 import type { Project } from "@/common/hooks/useProjects";
@@ -19,6 +31,12 @@ import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
 import { storageService, generateVideo, supabase, type VideoFormat, type Screenplay } from "@/api";
 import { parseDocuments, type ParsedDocument } from "@/common/utils/document-parser";
 import { generateTextToVideo } from "@/api/fal-video-service";
+import {
+  generateSlideshowPreview,
+  generateSlideshow,
+  type SlideData,
+  type SlideshowStyle,
+} from "@/api/slideshow-service";
 
 async function extractTextFromFiles(files: UploadedFile[]): Promise<{
   text: string;
@@ -75,6 +93,12 @@ export function GenerationPanel({
     documents: ParsedDocument[];
   } | null>(null);
   const [testVideoUrl, setTestVideoUrl] = React.useState<string | null>(null);
+
+  // Slideshow state
+  const [isGeneratingSlideshow, setIsGeneratingSlideshow] = React.useState(false);
+  const [slideshowSlides, setSlideshowSlides] = React.useState<SlideData[] | null>(null);
+  const [slideshowStyle, setSlideshowStyle] = React.useState<SlideshowStyle>("modern");
+  const [slideshowView, setSlideshowView] = React.useState<"carousel" | "grid">("carousel");
 
   const formatMap: Record<string, VideoFormat> = {
     reel: "reel",
@@ -327,7 +351,11 @@ Academic and informative tone suitable for online learning platforms.`;
 
       if (result.success && result.videoUrl) {
         setTestVideoUrl(result.videoUrl);
-        toast.success("Test video generated successfully!");
+        if (result.warning) {
+          toast.warning(result.warning);
+        } else {
+          toast.success("Test video generated and saved to storage!");
+        }
       } else {
         toast.error(result.error || "Failed to generate test video");
       }
@@ -337,6 +365,112 @@ Academic and informative tone suitable for online learning platforms.`;
     } finally {
       setIsTestingVideo(false);
     }
+  };
+
+  // Slideshow preview generation (4 slides)
+  const handleSlideshowPreview = async () => {
+    if (!extractedContent?.text && !topic.trim()) {
+      toast.error("Please add a topic or upload a document first");
+      return;
+    }
+
+    setIsGeneratingSlideshow(true);
+    setSlideshowSlides(null);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const content = extractedContent?.text || topic;
+
+      toast.info("Generating slideshow preview (4 slides)...");
+
+      const result = await generateSlideshowPreview(content, {
+        style: slideshowStyle,
+        userId: user?.id,
+      });
+
+      if (result.success && result.slides) {
+        setSlideshowSlides(result.slides);
+        toast.success(`Generated ${result.slideCount} slides!`);
+      } else {
+        toast.error(result.error || "Failed to generate slideshow");
+      }
+    } catch (error) {
+      console.error("Slideshow preview error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate slideshow");
+    } finally {
+      setIsGeneratingSlideshow(false);
+    }
+  };
+
+  // Full slideshow generation
+  const handleFullSlideshow = async () => {
+    if (!extractedContent?.text && !topic.trim()) {
+      toast.error("Please add a topic or upload a document first");
+      return;
+    }
+
+    setIsGeneratingSlideshow(true);
+    setSlideshowSlides(null);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const content = extractedContent?.text || topic;
+      const title = extractedContent?.documents[0]?.title || topic.slice(0, 50);
+      const maxSlides = Math.round(duration[0] / 6); // Calculate from slider
+
+      toast.info(`Generating slideshow (up to ${maxSlides} slides)...`);
+
+      const result = await generateSlideshow({
+        content,
+        title,
+        maxSlides,
+        style: slideshowStyle,
+        userId: user?.id,
+      });
+
+      if (result.success && result.slides) {
+        setSlideshowSlides(result.slides);
+        toast.success(`Generated ${result.slideCount} slides!`);
+      } else {
+        toast.error(result.error || "Failed to generate slideshow");
+      }
+    } catch (error) {
+      console.error("Slideshow generation error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate slideshow");
+    } finally {
+      setIsGeneratingSlideshow(false);
+    }
+  };
+
+  // Download slideshow as JSON (can be used to recreate or export)
+  const handleDownloadSlideshow = () => {
+    if (!slideshowSlides) {
+      return;
+    }
+
+    const slideshowData = {
+      title: extractedContent?.documents[0]?.title || topic.slice(0, 50) || "Slideshow",
+      style: slideshowStyle,
+      slides: slideshowSlides,
+      generatedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(slideshowData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `slideshow-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Slideshow data downloaded!");
   };
 
   return (
@@ -388,41 +522,73 @@ Academic and informative tone suitable for online learning platforms.`;
                 {extractedContent.text.length > 1000 && "..."}
               </pre>
             </div>
+          </div>
+        )}
 
-            {/* Quick Test Video Button */}
-            <div className="mt-3 flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestVideo}
-                disabled={isTestingVideo}
-                className="gap-2"
-              >
-                {isTestingVideo ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Generating Test Video...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-3 w-3" />
-                    Generate Quick Test Video
-                  </>
-                )}
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Uses fal.ai MiniMax (~$0.10, 5s video)
-              </span>
+        {/* Slideshow Preview - Full Width */}
+        {slideshowSlides && slideshowSlides.length > 0 && (
+          <div className="-mx-4 mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 md:-mx-6 md:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Presentation className="h-5 w-5 text-primary" />
+                <span className="text-base font-semibold text-primary">
+                  Slideshow Generated ({slideshowSlides.length} slides)
+                </span>
+              </div>
+              {/* View Toggle */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 rounded-lg bg-secondary p-1">
+                  <button
+                    onClick={() => setSlideshowView("carousel")}
+                    className={`rounded px-2 py-1.5 text-xs transition-colors ${
+                      slideshowView === "carousel"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Carousel view"
+                  >
+                    <Play className="mr-1 inline h-3 w-3" />
+                    Present
+                  </button>
+                  <button
+                    onClick={() => setSlideshowView("grid")}
+                    className={`rounded px-2 py-1.5 text-xs transition-colors ${
+                      slideshowView === "grid"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Grid view"
+                  >
+                    <Grid3X3 className="mr-1 inline h-3 w-3" />
+                    Grid
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {slideshowView === "carousel" ? (
+              <SlideshowPreview
+                slides={slideshowSlides}
+                autoPlay={false}
+                onDownload={handleDownloadSlideshow}
+              />
+            ) : (
+              <SlideshowGrid
+                slides={slideshowSlides}
+                onSlideClick={() => {
+                  setSlideshowView("carousel");
+                }}
+              />
+            )}
           </div>
         )}
 
         {/* Test Video Preview */}
         {testVideoUrl && (
-          <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
             <div className="mb-2 flex items-center gap-2">
-              <Play className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Test Video Generated!</span>
+              <Video className="h-4 w-4 text-accent" />
+              <span className="text-sm font-medium text-accent">AI Video Generated!</span>
             </div>
             <video
               src={testVideoUrl}
@@ -431,7 +597,7 @@ Academic and informative tone suitable for online learning platforms.`;
               style={{ maxHeight: "300px" }}
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              This is a quick 5-second preview. Full course videos will be longer and more detailed.
+              This is a quick 5-second AI-generated preview.
             </p>
           </div>
         )}
@@ -482,97 +648,240 @@ Academic and informative tone suitable for online learning platforms.`;
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
             4
           </span>
-          <h2 className="font-semibold">AI Models</h2>
+          <h2 className="font-semibold">
+            {contentType === "presentation" ? "AI & Style Settings" : "AI Models"}
+          </h2>
         </div>
 
         <div className="space-y-4">
-          {/* Screenplay AI Model */}
+          {/* Screenplay/Content AI Model */}
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-medium">Screenplay AI</span>
-              <span className="text-xs text-muted-foreground">Script & narration generation</span>
+              <span className="text-sm font-medium">
+                {contentType === "presentation" ? "Content AI" : "Screenplay AI"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {contentType === "presentation"
+                  ? "Slide content & narration"
+                  : "Script & narration generation"}
+              </span>
             </div>
             <ModelSelector value={selectedModel} onValueChange={setSelectedModel} />
           </div>
 
-          {/* Video Generation Model */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-medium">Video Generation</span>
-              <span className="text-xs text-muted-foreground">Text-to-video rendering</span>
+          {/* Video Generation Model OR Slideshow Style */}
+          {contentType === "presentation" ? (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-sm font-medium">Slideshow Style</span>
+                <span className="text-xs text-muted-foreground">Visual theme for slides</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(["modern", "minimal", "corporate", "creative"] as SlideshowStyle[]).map(
+                  (style) => (
+                    <button
+                      key={style}
+                      onClick={() => setSlideshowStyle(style)}
+                      className={`rounded-lg px-4 py-2 text-sm capitalize transition-all ${
+                        slideshowStyle === style
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ),
+                )}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Uses FLUX AI for background images with professional text overlays
+              </p>
             </div>
-            <VideoModelSelector value={selectedVideoModel} onValueChange={setSelectedVideoModel} />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Supports speech tags, ambient audio, and vertical/horizontal/square formats
-            </p>
-          </div>
+          ) : (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-sm font-medium">Video Generation</span>
+                <span className="text-xs text-muted-foreground">Text-to-video rendering</span>
+              </div>
+              <VideoModelSelector
+                value={selectedVideoModel}
+                onValueChange={setSelectedVideoModel}
+              />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Supports speech tags, ambient audio, and vertical/horizontal/square formats
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Settings */}
       <section className="glass space-y-4 rounded-xl p-4">
         <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-          Generation Settings
+          {contentType === "presentation" ? "Slideshow Settings" : "Generation Settings"}
         </h3>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="duration" className="text-sm">
-              Target Duration
-            </Label>
-            <span className="font-mono text-sm text-primary">{duration[0]}s</span>
-          </div>
-          <Slider
-            id="duration"
-            value={duration}
-            onValueChange={setDuration}
-            min={15}
-            max={90}
-            step={5}
-            className="w-full"
-          />
-        </div>
-
-        <div className="flex items-center justify-between py-2">
-          <div>
-            <Label htmlFor="voiceover" className="cursor-pointer text-sm">
-              AI Voiceover
-            </Label>
-            <p className="text-xs text-muted-foreground">Generate natural narration</p>
-          </div>
-          <Switch id="voiceover" checked={voiceover} onCheckedChange={setVoiceover} />
-        </div>
-
-        <div className="flex items-center justify-between py-2">
-          <div>
-            <Label htmlFor="captions" className="cursor-pointer text-sm">
-              Auto Captions
-            </Label>
-            <p className="text-xs text-muted-foreground">Add synchronized subtitles</p>
-          </div>
-          <Switch id="captions" checked={captions} onCheckedChange={setCaptions} />
-        </div>
-      </section>
-
-      {/* Generate Button */}
-      <Button
-        onClick={handleGenerate}
-        disabled={!canGenerate || isGenerating}
-        className="h-14 w-full rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent text-lg font-semibold text-primary-foreground transition-all hover:from-primary/90 hover:via-primary/80 hover:to-accent/90 hover:shadow-[0_0_30px_hsl(174_72%_56%/0.4)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isGenerating ? (
+        {contentType === "presentation" ? (
           <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Generating Screenplay...
+            {/* Max Slides for Presentation */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="maxSlides" className="text-sm">
+                  Maximum Slides
+                </Label>
+                <span className="font-mono text-sm text-primary">
+                  {Math.round(duration[0] / 6)}
+                </span>
+              </div>
+              <Slider
+                id="maxSlides"
+                value={duration}
+                onValueChange={setDuration}
+                min={24}
+                max={90}
+                step={6}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Each slide is ~30 seconds with narration
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label htmlFor="voiceover" className="cursor-pointer text-sm">
+                  Include Narration Script
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Generate speaker notes for each slide
+                </p>
+              </div>
+              <Switch id="voiceover" checked={voiceover} onCheckedChange={setVoiceover} />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label htmlFor="captions" className="cursor-pointer text-sm">
+                  AI Background Images
+                </Label>
+                <p className="text-xs text-muted-foreground">Generate unique visuals per slide</p>
+              </div>
+              <Switch id="captions" checked={captions} onCheckedChange={setCaptions} />
+            </div>
           </>
         ) : (
           <>
-            <Wand2 className="mr-2 h-5 w-5" />
-            Generate Screenplay
-            <ChevronRight className="ml-auto h-5 w-5" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="duration" className="text-sm">
+                  Target Duration
+                </Label>
+                <span className="font-mono text-sm text-primary">{duration[0]}s</span>
+              </div>
+              <Slider
+                id="duration"
+                value={duration}
+                onValueChange={setDuration}
+                min={15}
+                max={90}
+                step={5}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label htmlFor="voiceover" className="cursor-pointer text-sm">
+                  AI Voiceover
+                </Label>
+                <p className="text-xs text-muted-foreground">Generate natural narration</p>
+              </div>
+              <Switch id="voiceover" checked={voiceover} onCheckedChange={setVoiceover} />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label htmlFor="captions" className="cursor-pointer text-sm">
+                  Auto Captions
+                </Label>
+                <p className="text-xs text-muted-foreground">Add synchronized subtitles</p>
+              </div>
+              <Switch id="captions" checked={captions} onCheckedChange={setCaptions} />
+            </div>
           </>
         )}
-      </Button>
+      </section>
+
+      {/* Generate Button */}
+      {contentType === "presentation" ? (
+        <div className="space-y-3">
+          <Button
+            onClick={handleFullSlideshow}
+            disabled={!canGenerate || isGeneratingSlideshow}
+            className="h-14 w-full rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent text-lg font-semibold text-primary-foreground transition-all hover:from-primary/90 hover:via-primary/80 hover:to-accent/90 hover:shadow-[0_0_30px_hsl(174_72%_56%/0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isGeneratingSlideshow ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Generating Slideshow...
+              </>
+            ) : (
+              <>
+                <Presentation className="mr-2 h-5 w-5" />
+                Generate Slideshow
+                <ChevronRight className="ml-auto h-5 w-5" />
+              </>
+            )}
+          </Button>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSlideshowPreview}
+              disabled={!canGenerate || isGeneratingSlideshow}
+              className="flex-1 gap-2"
+            >
+              <Presentation className="h-3.5 w-3.5" />
+              Quick Preview (4 slides)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleTestVideo}
+              disabled={!canGenerate || isTestingVideo}
+              className="gap-2"
+            >
+              {isTestingVideo ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              AI Video
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          onClick={handleGenerate}
+          disabled={!canGenerate || isGenerating}
+          className="h-14 w-full rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent text-lg font-semibold text-primary-foreground transition-all hover:from-primary/90 hover:via-primary/80 hover:to-accent/90 hover:shadow-[0_0_30px_hsl(174_72%_56%/0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Generating Screenplay...
+            </>
+          ) : (
+            <>
+              <Wand2 className="mr-2 h-5 w-5" />
+              Generate Screenplay
+              <ChevronRight className="ml-auto h-5 w-5" />
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 }

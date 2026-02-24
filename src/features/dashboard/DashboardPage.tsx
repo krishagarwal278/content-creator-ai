@@ -67,9 +67,9 @@ const Index = () => {
         />
       </div>
 
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-[1600px]">
         {/* Header */}
-        <header className="mb-8 animate-fade-in">
+        <header className="mb-6 animate-fade-in">
           <h1 className="mb-2 text-3xl font-bold">
             {project ? (
               <span className="gradient-text">{project.name}</span>
@@ -86,12 +86,12 @@ const Index = () => {
           </p>
         </header>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left Panel - Generation Controls */}
+        {/* Dashboard Grid - Wider left panel for content */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
+          {/* Left Panel - Generation Controls (wider) */}
           <div
-            className="glass-strong animate-fade-in overflow-y-auto rounded-2xl border border-border/50 p-6"
-            style={{ animationDelay: "0.1s", height: "max(600px, calc(100vh - 140px))" }}
+            className="glass-strong animate-fade-in overflow-y-auto rounded-2xl border border-border/50 p-4 md:p-6"
+            style={{ animationDelay: "0.1s", height: "max(650px, calc(100vh - 120px))" }}
           >
             <GenerationPanel
               selectedVideo={selectedVideo}
@@ -104,8 +104,8 @@ const Index = () => {
 
           {/* Right Panel - Chat Interface */}
           <div
-            className="glass-strong flex animate-fade-in flex-col rounded-2xl border border-border/50 p-6"
-            style={{ animationDelay: "0.2s", height: "max(600px, calc(100vh - 140px))" }}
+            className="glass-strong flex animate-fade-in flex-col rounded-2xl border border-border/50 p-4 md:p-6"
+            style={{ animationDelay: "0.2s", height: "max(650px, calc(100vh - 120px))" }}
           >
             <div className="mb-4 flex items-center gap-2">
               <h2 className="font-semibold">Screenplay Studio</h2>

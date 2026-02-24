@@ -16,8 +16,11 @@ export interface TextToVideoRequest {
 export interface TextToVideoResponse {
   success: boolean;
   videoUrl?: string;
+  originalUrl?: string;
+  storagePath?: string;
   error?: string;
   requestId?: string;
+  warning?: string;
 }
 
 export interface VideoGenerationStatus {
@@ -60,20 +63,21 @@ export async function generateTextToVideo(
     }
 
     const result = await response.json();
+    const data = result.data || result;
 
-    if (result.data) {
-      return {
-        success: true,
-        videoUrl: result.data.videoUrl,
-        requestId: result.data.requestId,
-      };
+    // Log warning if video is on temporary URL (storage upload failed)
+    if (data.warning) {
+      console.warn(`[fal.ai] Warning: ${data.warning}`);
     }
 
     return {
-      success: result.success ?? true,
-      videoUrl: result.videoUrl,
-      requestId: result.requestId,
-      error: result.error,
+      success: data.success ?? true,
+      videoUrl: data.videoUrl,
+      originalUrl: data.originalUrl,
+      storagePath: data.storagePath,
+      requestId: data.requestId,
+      warning: data.warning,
+      error: data.error,
     };
   } catch (error) {
     console.error("[fal.ai] Error generating video:", error);
@@ -126,20 +130,21 @@ export async function generateImageToVideo(
     }
 
     const result = await response.json();
+    const data = result.data || result;
 
-    if (result.data) {
-      return {
-        success: true,
-        videoUrl: result.data.videoUrl,
-        requestId: result.data.requestId,
-      };
+    // Log warning if video is on temporary URL (storage upload failed)
+    if (data.warning) {
+      console.warn(`[fal.ai] Warning: ${data.warning}`);
     }
 
     return {
-      success: result.success ?? true,
-      videoUrl: result.videoUrl,
-      requestId: result.requestId,
-      error: result.error,
+      success: data.success ?? true,
+      videoUrl: data.videoUrl,
+      originalUrl: data.originalUrl,
+      storagePath: data.storagePath,
+      requestId: data.requestId,
+      warning: data.warning,
+      error: data.error,
     };
   } catch (error) {
     console.error("[fal.ai] Error generating video:", error);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,8 @@ import {
   BookOpen,
   GraduationCap,
   CheckCircle2,
+  Loader2,
+  Presentation,
 } from "lucide-react";
 import {
   Button,
@@ -23,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  SlideshowPreview,
 } from "@/components/ui";
 import {
   Select,
@@ -33,11 +36,20 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/api/client";
 import { submitInterestForm } from "@/api/interest-service";
+import { generateSlideshowPreview, type SlideData } from "@/api/slideshow-service";
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const [showBetaLogin, setShowBetaLogin] = useState(false);
   const [showInterestForm, setShowInterestForm] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const liveDemoRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (showDemo && liveDemoRef.current) {
+      liveDemoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showDemo]);
 
   // Theme state
   const [isDark, setIsDark] = useState(() => {
@@ -82,6 +94,149 @@ const LandingPage = () => {
   const [aiExperience, setAiExperience] = useState("");
 
   const [formLoading, setFormLoading] = useState(false);
+
+  // Demo slideshow state
+  const [demoTopic, setDemoTopic] = useState("");
+  const [demoSlides, setDemoSlides] = useState<SlideData[] | null>(null);
+  const [isDemoGenerating, setIsDemoGenerating] = useState(false);
+
+  const handleDemoGenerate = async () => {
+    if (!demoTopic.trim()) {
+      toast.error("Please enter a topic for your demo");
+      return;
+    }
+
+    setIsDemoGenerating(true);
+    setDemoSlides(null);
+
+    try {
+      toast.info("Generating your demo slideshow...");
+
+      const result = await generateSlideshowPreview(demoTopic, {
+        style: "modern",
+      });
+
+      if (result.success && result.slides) {
+        setDemoSlides(result.slides.slice(0, 4));
+        toast.success("Demo slideshow ready!");
+      } else {
+        // Fallback to mock demo slides when backend is unavailable
+        console.log("Using demo fallback slides");
+        const mockSlides: SlideData[] = [
+          {
+            slideNumber: 1,
+            title: `Introduction to ${demoTopic}`,
+            bulletPoints: [
+              "Understanding the core concepts and fundamentals",
+              "Why this topic matters in today's landscape",
+              "What you'll learn in this course module",
+            ],
+            narration: `Welcome to our course on ${demoTopic}. In this module, we'll explore the fundamental concepts that form the foundation of this subject.`,
+            imageUrl:
+              "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=450&fit=crop",
+          },
+          {
+            slideNumber: 2,
+            title: "Key Concepts & Terminology",
+            bulletPoints: [
+              "Essential vocabulary and definitions",
+              "Common frameworks and methodologies",
+              "Industry best practices overview",
+            ],
+            narration:
+              "Let's start by establishing a common vocabulary. Understanding these key terms will help you navigate more advanced topics.",
+            imageUrl:
+              "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=450&fit=crop",
+          },
+          {
+            slideNumber: 3,
+            title: "Practical Applications",
+            bulletPoints: [
+              "Real-world use cases and examples",
+              "Step-by-step implementation guide",
+              "Common pitfalls to avoid",
+            ],
+            narration:
+              "Now let's look at how these concepts apply in real-world scenarios. We'll walk through practical examples you can apply immediately.",
+            imageUrl:
+              "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=450&fit=crop",
+          },
+          {
+            slideNumber: 4,
+            title: "Summary & Next Steps",
+            bulletPoints: [
+              "Key takeaways from this module",
+              "Recommended resources for deeper learning",
+              "Preview of upcoming advanced topics",
+            ],
+            narration:
+              "To wrap up, let's review what we've covered and discuss how you can continue building on this foundation.",
+            imageUrl:
+              "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+          },
+        ];
+        setDemoSlides(mockSlides);
+        toast.success("Demo slideshow ready!");
+      }
+    } catch (error) {
+      console.error("Demo generation error:", error);
+      // Fallback to mock demo slides on error
+      const mockSlides: SlideData[] = [
+        {
+          slideNumber: 1,
+          title: `Introduction to ${demoTopic}`,
+          bulletPoints: [
+            "Understanding the core concepts and fundamentals",
+            "Why this topic matters in today's landscape",
+            "What you'll learn in this course module",
+          ],
+          narration: `Welcome to our course on ${demoTopic}. In this module, we'll explore the fundamental concepts.`,
+          imageUrl:
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=450&fit=crop",
+        },
+        {
+          slideNumber: 2,
+          title: "Key Concepts & Terminology",
+          bulletPoints: [
+            "Essential vocabulary and definitions",
+            "Common frameworks and methodologies",
+            "Industry best practices overview",
+          ],
+          narration: "Let's establish a common vocabulary for navigating this subject.",
+          imageUrl:
+            "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=450&fit=crop",
+        },
+        {
+          slideNumber: 3,
+          title: "Practical Applications",
+          bulletPoints: [
+            "Real-world use cases and examples",
+            "Step-by-step implementation guide",
+            "Common pitfalls to avoid",
+          ],
+          narration: "Now let's look at practical applications you can use immediately.",
+          imageUrl:
+            "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=450&fit=crop",
+        },
+        {
+          slideNumber: 4,
+          title: "Summary & Next Steps",
+          bulletPoints: [
+            "Key takeaways from this module",
+            "Recommended resources for deeper learning",
+            "Preview of upcoming advanced topics",
+          ],
+          narration: "Let's review what we've covered and discuss next steps.",
+          imageUrl:
+            "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop",
+        },
+      ];
+      setDemoSlides(mockSlides);
+      toast.success("Demo slideshow ready!");
+    } finally {
+      setIsDemoGenerating(false);
+    }
+  };
 
   const handleBetaLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,6 +391,7 @@ const LandingPage = () => {
             <Button
               data-testid="watch-demo-btn"
               variant="outline"
+              onClick={() => setShowDemo(true)}
               size="lg"
               className="border-border px-8 py-6 text-base text-foreground hover:bg-secondary"
             >
@@ -250,10 +406,19 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Demo Preview Section */}
-      <section className="relative px-6 py-20">
+      {/* Interactive Demo Section */}
+      <section ref={liveDemoRef} className="relative px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          {/* Browser mockup */}
+          <div className="mb-10 text-center">
+            <h2 className="mb-3 text-2xl font-bold md:text-3xl">
+              Try it now — <span className="gradient-text">no signup required</span>
+            </h2>
+            <p className="text-muted-foreground">
+              Enter any course topic and see AI generate professional slides instantly
+            </p>
+          </div>
+
+          {/* Demo Interface */}
           <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             {/* Browser header */}
             <div className="flex items-center gap-2 border-b border-border bg-secondary/50 px-4 py-3">
@@ -264,78 +429,118 @@ const LandingPage = () => {
               </div>
               <div className="flex flex-1 justify-center">
                 <div className="flex items-center gap-2 rounded-md bg-background/50 px-3 py-1 text-xs text-muted-foreground">
-                  <GraduationCap className="h-3 w-3 text-primary" />
-                  <span>Videaa Course Creator</span>
+                  <Presentation className="h-3 w-3 text-primary" />
+                  <span>Videaa Live Demo</span>
                 </div>
               </div>
             </div>
 
-            {/* Browser content - Course creation interface */}
-            <div className="bg-gradient-to-b from-background to-card p-8">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Left side - Upload */}
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-dashed border-primary/50 bg-primary/5 p-8 text-center">
-                    <Upload className="mx-auto mb-3 h-10 w-10 text-primary" />
-                    <p className="mb-1 text-sm font-medium">Drop your course content here</p>
-                    <p className="text-xs text-muted-foreground">PDF, PPTX, DOCX up to 50MB</p>
+            {/* Demo Content */}
+            <div className="bg-gradient-to-b from-background to-card p-6 md:p-8">
+              {!demoSlides ? (
+                <div className="mx-auto max-w-xl space-y-6">
+                  {/* Topic Input */}
+                  <div className="space-y-3">
+                    <Label htmlFor="demo-topic" className="text-sm font-medium">
+                      What would you like to teach?
+                    </Label>
+                    <Input
+                      id="demo-topic"
+                      placeholder="e.g., Introduction to Machine Learning, Python Basics, Digital Marketing 101..."
+                      value={demoTopic}
+                      onChange={(e) => setDemoTopic(e.target.value)}
+                      className="h-12 border-border bg-secondary/50 text-base"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !isDemoGenerating) {
+                          handleDemoGenerate();
+                        }
+                      }}
+                    />
                   </div>
 
-                  <div className="rounded-xl border border-border bg-card/50 p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Introduction_to_Python.pdf</span>
-                      <span className="ml-auto text-xs text-primary">Uploaded ✓</span>
-                    </div>
-                    <div className="space-y-2 text-xs text-muted-foreground">
-                      <p>• 12 chapters detected</p>
-                      <p>• 45 key concepts extracted</p>
-                      <p>• Estimated: 8 video modules</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side - Settings */}
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-border bg-card/50 p-4">
-                    <span className="mb-3 block text-xs font-medium text-muted-foreground">
-                      VOICEOVER
-                    </span>
-                    <div className="flex items-center justify-between rounded-lg border border-primary bg-primary/10 p-3">
-                      <div className="flex items-center gap-2">
-                        <Mic className="h-4 w-4 text-primary" />
-                        <span className="text-sm">Clone my voice</span>
-                      </div>
-                      <span className="text-xs text-primary">Active</span>
-                    </div>
+                  {/* Quick Topic Suggestions */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">Try:</span>
+                    {[
+                      "Python for Beginners",
+                      "AWS Cloud Fundamentals",
+                      "UX Design Principles",
+                      "Financial Modeling",
+                    ].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => setDemoTopic(suggestion)}
+                        className="rounded-full border border-border bg-secondary/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="rounded-xl border border-border bg-card/50 p-4">
-                    <span className="mb-3 block text-xs font-medium text-muted-foreground">
-                      EXPORT FORMAT
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-lg border border-primary bg-primary/10 p-2 text-center text-xs">
-                        Udemy MP4
-                      </div>
-                      <div className="rounded-lg border border-border p-2 text-center text-xs text-muted-foreground">
-                        SCORM 2004
-                      </div>
-                      <div className="rounded-lg border border-border p-2 text-center text-xs text-muted-foreground">
-                        Coursera
-                      </div>
-                      <div className="rounded-lg border border-border p-2 text-center text-xs text-muted-foreground">
-                        Raw MP4
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button className="w-full bg-primary text-primary-foreground">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Course Videos
+                  {/* Generate Button */}
+                  <Button
+                    onClick={handleDemoGenerate}
+                    disabled={!demoTopic.trim() || isDemoGenerating}
+                    className="h-12 w-full bg-primary text-base text-primary-foreground hover:bg-primary/90"
+                  >
+                    {isDemoGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Generating Demo...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        Generate 4-Slide Preview
+                      </>
+                    )}
                   </Button>
+
+                  <p className="text-center text-xs text-muted-foreground">
+                    Free demo • No account needed • Results in ~10 seconds
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Demo Result Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Presentation className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-primary">Demo: {demoTopic}</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        {demoSlides.length} slides
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDemoSlides(null);
+                        setDemoTopic("");
+                      }}
+                    >
+                      Try Another Topic
+                    </Button>
+                  </div>
+
+                  {/* Slideshow Preview */}
+                  <SlideshowPreview slides={demoSlides} autoPlay />
+
+                  {/* CTA after demo */}
+                  <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      Like what you see? Get full slideshows with up to 15 slides, AI voiceover, and
+                      LMS export.
+                    </p>
+                    <Button
+                      onClick={() => setShowInterestForm(true)}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Get Full Access — Free Beta
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

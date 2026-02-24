@@ -44,6 +44,7 @@ export * from "./sheet";
 export * from "./sidebar";
 export * from "./skeleton";
 export * from "./slider";
+export * from "./slideshow-preview";
 // Note: sonner exports Toaster which conflicts with toaster.tsx
 // Import directly: import { Toaster as Sonner } from "@/common/components/ui/sonner";
 // export * from "./sonner";

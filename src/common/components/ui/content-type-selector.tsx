@@ -38,10 +38,9 @@ const contentTypes: ContentType[] = [
   {
     id: "presentation",
     name: "Presentation",
-    description: "Slide narration",
+    description: "AI slideshow with narration",
     icon: Presentation,
     duration: "Custom",
-    comingSoon: true,
   },
 ];
 

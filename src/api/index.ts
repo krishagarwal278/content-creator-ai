@@ -14,3 +14,4 @@ export * from "./video-generation-service";
 export * from "./account-service";
 export * from "./interest-service";
 export * from "./fal-video-service";
+export * from "./slideshow-service";

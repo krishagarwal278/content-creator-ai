@@ -127,6 +127,48 @@ describe("LandingPage", () => {
     });
   });
 
+  describe("See How It Works / Live Demo", () => {
+    it("should display the live demo section with expected content", () => {
+      renderLandingPage();
+
+      expect(screen.getByText(/Try it now/)).toBeInTheDocument();
+      expect(screen.getByText(/no signup required/)).toBeInTheDocument();
+      expect(screen.getByText("Videaa Live Demo")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/e.g., Introduction to Machine Learning/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Generate 4-Slide Preview/i })).toBeInTheDocument();
+    });
+
+    it("should scroll to live demo section when See How It Works is clicked", async () => {
+      const user = userEvent.setup();
+      const scrollIntoViewSpy = vi
+        .spyOn(Element.prototype, "scrollIntoView")
+        .mockImplementation(() => {});
+
+      renderLandingPage();
+
+      const seeHowItWorksBtn = screen.getByRole("button", { name: /See How It Works/i });
+      await user.click(seeHowItWorksBtn);
+
+      await waitFor(() => {
+        expect(scrollIntoViewSpy).toHaveBeenCalledWith({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+
+      scrollIntoViewSpy.mockRestore();
+    });
+
+    it("should have See How It Works button that targets the demo section", () => {
+      renderLandingPage();
+
+      const btn = screen.getByTestId("watch-demo-btn");
+      expect(btn).toHaveTextContent("See How It Works");
+    });
+  });
+
   describe("Features Section", () => {
     it("should display Document Upload feature", () => {
       renderLandingPage();
