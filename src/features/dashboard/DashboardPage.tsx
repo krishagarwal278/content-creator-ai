@@ -75,14 +75,14 @@ const Index = () => {
               <span className="gradient-text">{project.name}</span>
             ) : (
               <>
-                Create <span className="gradient-text">AI Video</span> Content
+                Create <span className="gradient-text">Course Videos</span>
               </>
             )}
           </h1>
           <p className="max-w-2xl text-muted-foreground">
             {project
-              ? "Manage and update your project assets and generation settings."
-              : "Transform your documents, slides, and notebooks into engaging short-form videos, reels, and cinematic content with AI."}
+              ? "Manage and update your course content and generation settings."
+              : "Upload your lecture notes, slides, or PDFs. Generate professional course videos with AI voiceover — ready for Udemy, Coursera, or any LMS."}
           </p>
         </header>
 
@@ -130,16 +130,16 @@ const Index = () => {
         >
           {[
             {
-              title: "Multi-Model Support",
-              desc: "GPT-4o, Gemini, and more",
+              title: "Document to Video",
+              desc: "Upload PDF, PPTX, DOCX",
             },
             {
-              title: "Smart Extraction",
-              desc: "Auto-generates scripts from docs",
+              title: "AI Voiceover",
+              desc: "30+ voices or clone yours",
             },
             {
-              title: "VFX & Captions",
-              desc: "Professional-grade output",
+              title: "LMS-Ready Export",
+              desc: "SCORM, Udemy MP4, Coursera",
             },
           ].map((feature, i) => (
             <div key={i} className="glass rounded-xl border border-border/30 p-4">

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Wand2, Loader2, ChevronRight, Video } from "lucide-react";
+import { Wand2, Loader2, ChevronRight, Video, FileText, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -17,35 +17,29 @@ import {
 import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
 import { storageService, generateVideo, supabase, type VideoFormat, type Screenplay } from "@/api";
+import { parseDocuments, type ParsedDocument } from "@/common/utils/document-parser";
+import { generateTextToVideo } from "@/api/fal-video-service";
 
-async function extractTextFromFile(file: File): Promise<string> {
-  const textTypes = ["text/plain", "text/markdown", "application/json"];
-  const textExtensions = [".txt", ".md", ".markdown", ".json"];
+async function extractTextFromFiles(files: UploadedFile[]): Promise<{
+  text: string;
+  documents: ParsedDocument[];
+}> {
+  const filesToParse = files.filter((f) => f.file).map((f) => f.file!);
 
-  const isTextFile =
-    textTypes.includes(file.type) ||
-    textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
-
-  if (isTextFile) {
-    return await file.text();
+  if (filesToParse.length === 0) {
+    return { text: "", documents: [] };
   }
 
-  return "";
-}
+  const result = await parseDocuments(filesToParse);
 
-async function extractTextFromFiles(files: UploadedFile[]): Promise<string> {
-  const textParts: string[] = [];
-
-  for (const uploadedFile of files) {
-    if (uploadedFile.file) {
-      const text = await extractTextFromFile(uploadedFile.file);
-      if (text.trim()) {
-        textParts.push(`--- ${uploadedFile.name} ---\n${text}`);
-      }
-    }
+  if (result.errors.length > 0) {
+    console.warn("Document parsing errors:", result.errors);
   }
 
-  return textParts.join("\n\n");
+  return {
+    text: result.combinedText,
+    documents: result.documents,
+  };
 }
 
 interface GenerationPanelProps {
@@ -71,10 +65,16 @@ export function GenerationPanel({
   const [files, setFiles] = React.useState<UploadedFile[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isTestingVideo, setIsTestingVideo] = React.useState(false);
   const [duration, setDuration] = React.useState([30]);
   const [voiceover, setVoiceover] = React.useState(true);
   const [captions, setCaptions] = React.useState(true);
   const [topic, setTopic] = React.useState("");
+  const [extractedContent, setExtractedContent] = React.useState<{
+    text: string;
+    documents: ParsedDocument[];
+  } | null>(null);
+  const [testVideoUrl, setTestVideoUrl] = React.useState<string | null>(null);
 
   const formatMap: Record<string, VideoFormat> = {
     reel: "reel",
@@ -130,9 +130,31 @@ export function GenerationPanel({
     // 1. Update local state first to show them in UI
     setFiles(newFiles);
 
-    // 2. If we have an existing project, auto-upload the new files
+    // 2. Extract text content from new files
+    if (newFiles.length > 0) {
+      const filesToExtract = newFiles.filter((f) => f.file);
+      if (filesToExtract.length > 0) {
+        toast.info("Extracting content from documents...");
+        try {
+          const extracted = await extractTextFromFiles(newFiles);
+          setExtractedContent(extracted);
+          if (extracted.text) {
+            toast.success(
+              `Extracted ${extracted.documents.length} document(s) - ${extracted.text.length} characters`,
+            );
+          }
+        } catch (err) {
+          console.error("Failed to extract content:", err);
+          toast.error("Failed to extract document content");
+        }
+      }
+    } else {
+      setExtractedContent(null);
+    }
+
+    // 3. If we have an existing project, auto-upload the new files
     if (existingProject) {
-      const filesToUpload = newFiles.filter((f) => f.file && !f.file_url); // Check for file object and no URL yet
+      const filesToUpload = newFiles.filter((f) => f.file && !f.file_url);
 
       if (filesToUpload.length > 0) {
         setIsUploading(true);
@@ -154,7 +176,6 @@ export function GenerationPanel({
 
           if (uploadedCount > 0) {
             toast.success(`Uploaded ${uploadedCount} file(s)`);
-            // Refresh from server to get clean state (real IDs, URLs)
             const projectFiles = await storageService.getProjectFiles(existingProject.id);
             setFiles(
               projectFiles.map((pf) => ({
@@ -177,7 +198,7 @@ export function GenerationPanel({
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
-      toast.error("Please describe what your video should be about");
+      toast.error("Please describe what this course module should cover");
       return;
     }
 
@@ -193,7 +214,8 @@ export function GenerationPanel({
         return;
       }
 
-      const projectName = files[0]?.name?.split(".")[0] || topic.slice(0, 30) || "Untitled Video";
+      const projectName =
+        files[0]?.name?.split(".")[0] || topic.slice(0, 30) || "Untitled Course Module";
 
       // Prepare background video if selected
       const backgroundVideo = selectedVideo
@@ -204,8 +226,8 @@ export function GenerationPanel({
           }
         : undefined;
 
-      // Extract text content from uploaded files
-      const documentContent = await extractTextFromFiles(files);
+      // Use already extracted content or extract now
+      const documentContent = extractedContent?.text || (await extractTextFromFiles(files)).text;
 
       toast.info("Generating screenplay...");
 
@@ -268,6 +290,55 @@ export function GenerationPanel({
 
   const canGenerate = topic.trim().length > 0;
 
+  // Quick test video generation using fal.ai (via backend)
+  const handleTestVideo = async () => {
+    if (!extractedContent?.text && !topic.trim()) {
+      toast.error("Please add a topic or upload a document first");
+      return;
+    }
+
+    setIsTestingVideo(true);
+    setTestVideoUrl(null);
+
+    try {
+      // Get current user for the request
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Create a prompt from the extracted content or topic
+      const contentSummary = extractedContent?.text
+        ? extractedContent.text.substring(0, 500)
+        : topic;
+
+      const videoPrompt = `Educational course video about: ${contentSummary}. 
+Professional presentation style with clear visuals, smooth transitions, and engaging graphics. 
+Academic and informative tone suitable for online learning platforms.`;
+
+      toast.info("Generating test video via backend (this may take 1-2 minutes)...");
+
+      const result = await generateTextToVideo({
+        prompt: videoPrompt,
+        duration: 5,
+        aspectRatio: "16:9",
+        model: "minimax",
+        userId: user?.id,
+      });
+
+      if (result.success && result.videoUrl) {
+        setTestVideoUrl(result.videoUrl);
+        toast.success("Test video generated successfully!");
+      } else {
+        toast.error(result.error || "Failed to generate test video");
+      }
+    } catch (error) {
+      console.error("Test video error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate test video");
+    } finally {
+      setIsTestingVideo(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Topic Input */}
@@ -276,10 +347,10 @@ export function GenerationPanel({
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
             1
           </span>
-          <h2 className="font-semibold">Describe Your Video</h2>
+          <h2 className="font-semibold">Describe Your Course Module</h2>
         </div>
         <Textarea
-          placeholder="What should your video be about? E.g., '5 productivity tips for remote workers' or 'A cinematic intro for my tech startup'"
+          placeholder="What should this module cover? E.g., 'Introduction to Python variables and data types' or 'Explain the concept of object-oriented programming with examples'"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           className="min-h-[100px] resize-none"
@@ -293,11 +364,77 @@ export function GenerationPanel({
             2
           </span>
           <h2 className="font-semibold">
-            Upload Content <span className="font-normal text-muted-foreground">(Optional)</span>
+            Upload Course Materials{" "}
+            <span className="font-normal text-muted-foreground">(PDF, PPTX, DOCX)</span>
           </h2>
           {isUploading && <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
         <FileUploadZone files={files} onFilesChange={handleFilesChange} />
+
+        {/* Extracted Content Preview */}
+        {extractedContent && extractedContent.text && (
+          <div className="mt-4 rounded-xl border border-border/50 bg-card/50 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Extracted Content Preview</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {extractedContent.documents.length} doc(s) •{" "}
+                {extractedContent.text.length.toLocaleString()} chars
+              </span>
+            </div>
+            <div className="max-h-32 overflow-y-auto rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+              <pre className="whitespace-pre-wrap font-mono">
+                {extractedContent.text.substring(0, 1000)}
+                {extractedContent.text.length > 1000 && "..."}
+              </pre>
+            </div>
+
+            {/* Quick Test Video Button */}
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestVideo}
+                disabled={isTestingVideo}
+                className="gap-2"
+              >
+                {isTestingVideo ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Generating Test Video...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3" />
+                    Generate Quick Test Video
+                  </>
+                )}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Uses fal.ai MiniMax (~$0.10, 5s video)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Test Video Preview */}
+        {testVideoUrl && (
+          <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Play className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Test Video Generated!</span>
+            </div>
+            <video
+              src={testVideoUrl}
+              controls
+              className="w-full rounded-lg"
+              style={{ maxHeight: "300px" }}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              This is a quick 5-second preview. Full course videos will be longer and more detailed.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Selected Background Video */}

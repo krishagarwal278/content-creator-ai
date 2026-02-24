@@ -46,14 +46,14 @@ describe("GenerationPanel", () => {
     it("should render topic input section", () => {
       render(<GenerationPanel />);
 
-      expect(screen.getByText("Describe Your Video")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/What should your video be about/)).toBeInTheDocument();
+      expect(screen.getByText("Describe Your Course Module")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/What should this module cover/)).toBeInTheDocument();
     });
 
     it("should render file upload section", () => {
       render(<GenerationPanel />);
 
-      expect(screen.getByText("Upload Content")).toBeInTheDocument();
+      expect(screen.getByText("Upload Course Materials")).toBeInTheDocument();
     });
 
     it("should render content type selector", () => {
@@ -93,7 +93,7 @@ describe("GenerationPanel", () => {
       const user = userEvent.setup();
       render(<GenerationPanel />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "AI productivity tips");
 
       expect(input).toHaveValue("AI productivity tips");
@@ -110,7 +110,7 @@ describe("GenerationPanel", () => {
       const user = userEvent.setup();
       render(<GenerationPanel />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "Test topic");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });
@@ -187,7 +187,7 @@ describe("GenerationPanel", () => {
       render(<GenerationPanel />);
 
       // Button should be disabled, but let's test the validation
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "   "); // Only whitespace
       await user.clear(input);
 
@@ -212,7 +212,7 @@ describe("GenerationPanel", () => {
 
       render(<GenerationPanel onScreenplayGenerated={mockOnScreenplayGenerated} />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "AI productivity tips");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });
@@ -258,7 +258,7 @@ describe("GenerationPanel", () => {
 
       render(<GenerationPanel onScreenplayGenerated={mockOnScreenplayGenerated} />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "Test topic");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });
@@ -277,7 +277,7 @@ describe("GenerationPanel", () => {
 
       render(<GenerationPanel />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "Test topic");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });
@@ -292,7 +292,7 @@ describe("GenerationPanel", () => {
 
       render(<GenerationPanel />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "Test topic");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });
@@ -312,7 +312,7 @@ describe("GenerationPanel", () => {
 
       render(<GenerationPanel />);
 
-      const input = screen.getByPlaceholderText(/What should your video be about/);
+      const input = screen.getByPlaceholderText(/What should this module cover/);
       await user.type(input, "Test topic");
 
       const button = screen.getByRole("button", { name: /Generate Screenplay/i });

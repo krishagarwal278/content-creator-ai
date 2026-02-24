@@ -98,14 +98,14 @@ describe("LandingPage", () => {
     it("should display main headline", () => {
       renderLandingPage();
 
-      expect(screen.getByText(/Turn your text into/)).toBeInTheDocument();
-      expect(screen.getByText("cinematic reality")).toBeInTheDocument();
+      expect(screen.getByText(/Turn your course notes into/)).toBeInTheDocument();
+      expect(screen.getByText("engaging videos")).toBeInTheDocument();
     });
 
     it("should display subheadline", () => {
       renderLandingPage();
 
-      expect(screen.getByText(/Create physics-accurate, high-fidelity videos/)).toBeInTheDocument();
+      expect(screen.getByText(/Upload your lecture notes, slides, or PDFs/)).toBeInTheDocument();
     });
 
     it("should display Start Creating button", () => {
@@ -120,33 +120,33 @@ describe("LandingPage", () => {
       expect(screen.getByTestId("watch-demo-btn")).toBeInTheDocument();
     });
 
-    it("should display beta badge", () => {
+    it("should display beta badge for course creators", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Next Gen AI Video Engine v2.0")).toBeInTheDocument();
+      expect(screen.getByText("Built for Udemy & Coursera Instructors")).toBeInTheDocument();
     });
   });
 
   describe("Features Section", () => {
-    it("should display Lightning Fast feature", () => {
+    it("should display Document Upload feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Lightning Fast")).toBeInTheDocument();
-      expect(screen.getByText(/Generate 1080p video clips in seconds/)).toBeInTheDocument();
+      expect(screen.getByText("Document Upload")).toBeInTheDocument();
+      expect(screen.getByText(/PDF, DOCX, PPTX — upload any format/)).toBeInTheDocument();
     });
 
-    it("should display Commercial Rights feature", () => {
+    it("should display AI Voiceover feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Commercial Rights")).toBeInTheDocument();
-      expect(screen.getByText(/Full ownership of your generated content/)).toBeInTheDocument();
+      expect(screen.getByText("AI Voiceover & Voice Cloning")).toBeInTheDocument();
+      expect(screen.getByText(/40\+ professional voices or clone your own/)).toBeInTheDocument();
     });
 
-    it("should display Physics Engine feature", () => {
+    it("should display SCORM Export feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Physics Engine")).toBeInTheDocument();
-      expect(screen.getByText(/Our AI understands gravity, light, and motion/)).toBeInTheDocument();
+      expect(screen.getByText("SCORM 1.2 & 2004 Export")).toBeInTheDocument();
+      expect(screen.getByText(/Export LMS-ready packages/)).toBeInTheDocument();
     });
   });
 
@@ -264,7 +264,7 @@ describe("LandingPage", () => {
 
       await user.click(screen.getByTestId("join-beta-btn"));
 
-      expect(screen.getByText("Join the Videaa Beta")).toBeInTheDocument();
+      expect(screen.getByText("Get Early Access to Videaa")).toBeInTheDocument();
     });
 
     it("should have required form fields", async () => {
@@ -393,7 +393,7 @@ describe("LandingPage", () => {
     it("should have inline interest form in the page", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Join the Future")).toBeInTheDocument();
+      expect(screen.getByText("Start Creating Course Videos Today")).toBeInTheDocument();
       expect(screen.getByTestId("interest-name-input")).toBeInTheDocument();
       expect(screen.getByTestId("interest-email-input")).toBeInTheDocument();
     });
@@ -401,16 +401,16 @@ describe("LandingPage", () => {
     it("should have topic chips for selection", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Tech & Coding")).toBeInTheDocument();
-      expect(screen.getByText("Business")).toBeInTheDocument();
-      expect(screen.getByText("Academic")).toBeInTheDocument();
+      expect(screen.getByText("Programming & Tech")).toBeInTheDocument();
+      expect(screen.getByText("Business & Finance")).toBeInTheDocument();
+      expect(screen.getByText("Academic Subjects")).toBeInTheDocument();
     });
 
     it("should toggle topic selection when clicked", async () => {
       const user = userEvent.setup();
       renderLandingPage();
 
-      const techChip = screen.getByText("Tech & Coding");
+      const techChip = screen.getByText("Programming & Tech");
       await user.click(techChip);
 
       // Should have selected styling
