@@ -20,6 +20,8 @@ This is a **frontend-only** React + Vite + TypeScript application (AI-powered vi
 
 ### Non-obvious caveats
 
+- `lint-staged` (pre-commit hook) and `scripts/lint.sh` reference `/usr/local/bin/node` as an absolute path. If using nvm, you need a symlink: `sudo ln -sf $(which node) /usr/local/bin/node`.
+
 - The `.env` file must exist at the repo root with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_BASE_URL`, and `VITE_BACKEND_URL`. A reference file `.env 2` (note the space) ships in the repo and can be copied: `cp ".env 2" .env`.
 - The lint script in `package.json` (`npm run lint`) calls `./scripts/lint.sh` — a thin wrapper that invokes `eslint` via an absolute Node path. For CI-style lint use `npm run lint:ci` instead, which calls `eslint` directly.
 - Pre-commit hook (`.husky/pre-commit`) runs `lint-staged`, which auto-fixes lint + format on staged files.
