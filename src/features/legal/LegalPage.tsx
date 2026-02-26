@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type LegalDocType = "privacy-policy" | "terms-of-service";
 
@@ -81,22 +82,20 @@ export function LegalPage() {
 
 function MarkdownContent({ content }: { content: string }) {
   const lines = content.split("\n");
-  const elements: JSX.Element[] = [];
+  const elements: React.ReactNode[] = [];
   let listItems: string[] = [];
-  let inList = false;
 
   const flushList = () => {
     if (listItems.length > 0) {
       elements.push(
         <ul key={`list-${elements.length}`} className="list-disc space-y-1 pl-6">
-          {listItems.map((item, i) => (
+          {listItems.map((item, i: number) => (
             <li key={i}>{item}</li>
           ))}
         </ul>,
       );
       listItems = [];
     }
-    inList = false;
   };
 
   lines.forEach((line, index) => {
@@ -124,7 +123,6 @@ function MarkdownContent({ content }: { content: string }) {
         </h3>,
       );
     } else if (trimmed.startsWith("- ")) {
-      inList = true;
       listItems.push(trimmed.slice(2));
     } else if (trimmed.startsWith("*") && trimmed.endsWith("*") && !trimmed.startsWith("**")) {
       flushList();

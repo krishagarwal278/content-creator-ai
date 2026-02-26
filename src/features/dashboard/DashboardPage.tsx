@@ -1,8 +1,9 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { GenerationPanel } from "./generation-panel";
 import { ChatPanel } from "./chat-panel";
-import { useProjectContext, useAuth } from "@/common/contexts";
+import { useProjectContext } from "@/common/contexts/ProjectContext";
+import { useAuth } from "@/common/contexts/AuthContext";
 import { useProject } from "@/common/hooks/useProjects";
 import {
   videoGenerationService,
@@ -15,19 +16,19 @@ const Index = () => {
   const { selectedVideo, setSelectedProject } = useProjectContext();
   const { data: project } = useProject(id || null);
   const { user } = useAuth();
-  const [screenplay, setScreenplay] = React.useState<Screenplay | null>(null);
-  const [generatedProjectId, setGeneratedProjectId] = React.useState<string | null>(null);
-  const [selectedAiModel, setSelectedAiModel] = React.useState("gpt-4o");
-  const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat>("reel");
+  const [screenplay, setScreenplay] = useState<Screenplay | null>(null);
+  const [generatedProjectId, setGeneratedProjectId] = useState<string | null>(null);
+  const [selectedAiModel, setSelectedAiModel] = useState("gpt-4o");
+  const [selectedFormat, setSelectedFormat] = useState<VideoFormat>("reel");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (project) {
       setSelectedProject(project);
     }
   }, [project, setSelectedProject]);
 
   // Load existing screenplay when viewing a project
-  React.useEffect(() => {
+  useEffect(() => {
     async function loadProjectScreenplay() {
       if (!id) {
         return;

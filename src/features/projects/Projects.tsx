@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useProjects,
@@ -28,7 +28,12 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
-import { Button, Input, Badge, Label, Textarea, Switch } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -292,7 +297,7 @@ function CreateProjectDialog({
   onSubmit: (data: CreateProjectInput) => void;
   isLoading: boolean;
 }) {
-  const [formData, setFormData] = React.useState<CreateProjectInput>({
+  const [formData, setFormData] = useState<CreateProjectInput>({
     name: "",
     content_type: "reel",
     description: "",
@@ -471,13 +476,11 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 
 const Projects = () => {
   const navigate = useNavigate();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [deleteProject, setDeleteProject] = React.useState<{ id: string; name: string } | null>(
-    null,
-  );
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
-  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteProject, setDeleteProject] = useState<{ id: string; name: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const { data: projects, isLoading, error } = useProjects();
   const createProjectMutation = useCreateProject();
@@ -505,7 +508,7 @@ const Projects = () => {
     }
   };
 
-  const filteredProjects = React.useMemo(() => {
+  const filteredProjects = useMemo(() => {
     if (!projects) {
       return [];
     }

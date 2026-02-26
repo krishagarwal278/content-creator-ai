@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { Home, FolderOpen, Settings, History, PlusCircle, LogOut } from "lucide-react";
 import {
   Box,
@@ -18,8 +18,9 @@ import {
 } from "@mui/material";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 
-import { useProjectContext, useAuth } from "@/common/contexts";
-import { accountService, DEFAULT_ACCOUNT_INFO } from "@/api";
+import { useProjectContext } from "@/common/contexts/ProjectContext";
+import { useAuth } from "@/common/contexts/AuthContext";
+import { accountService, DEFAULT_ACCOUNT_INFO } from "@/api/account-service";
 import "@/styles/layout.css";
 
 interface NavItem {
@@ -41,10 +42,10 @@ export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [planDisplay, setPlanDisplay] = React.useState("Free Plan");
+  const [planDisplay, setPlanDisplay] = useState("Free Plan");
 
   // Fetch account info for sidebar plan display
-  React.useEffect(() => {
+  useEffect(() => {
     async function loadAccountInfo() {
       if (!user?.id) {
         return;

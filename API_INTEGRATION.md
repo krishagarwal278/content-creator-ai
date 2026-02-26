@@ -1,6 +1,6 @@
 # API Integration Guide
 
-This guide explains how to make API calls from the frontend to your Supabase backend.
+This guide explains how to make API calls from the frontend to the backend. The backend is maintained in a separate repo: [github.com/krishagarwal278/supabase](https://github.com/krishagarwal278/supabase).
 
 ## 🏗️ Architecture
 

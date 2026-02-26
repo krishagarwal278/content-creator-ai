@@ -1,4 +1,4 @@
-import * as React from "react";
+import { Fragment, useEffect, useState, useRef, useCallback } from "react";
 import {
   Send,
   Video,
@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, Input, Progress } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { ChatMessage, TypingIndicator, type ChatMessageData } from "./chat-message";
 import { ChatScreenplayCard } from "./chat-screenplay-card";
-import type { Screenplay, VideoFormat } from "@/api";
-import { videoGenerationService } from "@/api";
+import type { Screenplay, VideoFormat } from "@/api/video-generation-service";
+import { videoGenerationService } from "@/api/video-generation-service";
 import { cn } from "@/lib/utils";
 
 interface ChatPanelProps {
@@ -58,19 +60,19 @@ export function ChatPanel({
   aiModel = "gpt-4o",
   format,
 }: ChatPanelProps) {
-  const [messages, setMessages] = React.useState<ChatMessageData[]>([]);
-  const [inputValue, setInputValue] = React.useState("");
-  const [isRefining, setIsRefining] = React.useState(false);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [isGeneratingVideo, setIsGeneratingVideo] = React.useState(false);
-  const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
-  const [videoProgress, setVideoProgress] = React.useState(0);
-  const [isPlaying, setIsPlaying] = React.useState(false);
+  const [messages, setMessages] = useState<ChatMessageData[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const isLoading = isRefining || isGenerating;
 
@@ -78,17 +80,17 @@ export function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     scrollToBottom();
   }, [messages, screenplay]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialVideoUrl) {
       setVideoUrl(initialVideoUrl);
     }
   }, [initialVideoUrl]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
@@ -96,7 +98,7 @@ export function ChatPanel({
     };
   }, []);
 
-  const pollVideoStatus = React.useCallback(async (videoId: string) => {
+  const pollVideoStatus = useCallback(async (videoId: string) => {
     pollingRef.current = setInterval(async () => {
       try {
         const status = await videoGenerationService.getVideoStatus(videoId);
@@ -122,7 +124,7 @@ export function ChatPanel({
     }, 3000);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialVideoId) {
       setIsGeneratingVideo(true);
       pollVideoStatus(initialVideoId);
@@ -412,13 +414,13 @@ export function ChatPanel({
               message.role === "assistant" && index === messages.length - 1 && screenplay;
 
             return (
-              <React.Fragment key={message.id}>
+              <Fragment key={message.id}>
                 <ChatMessage message={message}>
                   {isLastAssistantBeforeScreenplay && (
                     <ChatScreenplayCard screenplay={screenplay} isLatest={true} />
                   )}
                 </ChatMessage>
-              </React.Fragment>
+              </Fragment>
             );
           })}
 

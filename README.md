@@ -6,7 +6,7 @@ Transform your documents, PDFs, slides, and notebooks into engaging short-form v
 
 ### Prerequisites
 
-- Node.js 18+ & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Node.js 20+** & npm (required for Supabase compatibility; Node 18 is EOL). Use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) and run `nvm use` in the project root (see `.nvmrc`).
 
 ### Installation
 
@@ -30,7 +30,7 @@ npm run dev
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS + shadcn/ui
 - **UI Components**: Material UI (MUI)
-- **Backend**: Supabase (Auth, Database)
+- **Backend**: External — [github.com/krishagarwal278/supabase](https://github.com/krishagarwal278/supabase) (Supabase, Express, video/voice APIs). Frontend talks to it via `VITE_BACKEND_URL`.
 - **State Management**: React Query
 
 ## Project Structure
@@ -60,6 +60,16 @@ VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_BACKEND_URL=http://localhost:4000
 ```
+
+The backend (Express, video/voice/slideshow APIs) is in a separate repo: [github.com/krishagarwal278/supabase](https://github.com/krishagarwal278/supabase). Point `VITE_BACKEND_URL` at that service.
+
+## Documentation
+
+- **[AGENTS.md](AGENTS.md)** — Entry point for AI coding agents (commands, structure, required refs)
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Layers, barrel vs direct imports, scalability, backend placement
+- **[STYLEGUIDE.md](STYLEGUIDE.md)** — TypeScript, React, Vite, Tailwind, and file conventions
+- **[DEPENDENCIES.md](DEPENDENCIES.md)** — Package management, version bumps, upgrade checklist
+- **[CONVENTIONS.md](CONVENTIONS.md)** — Commit messages, branch naming, PR checks
 
 ## License
 

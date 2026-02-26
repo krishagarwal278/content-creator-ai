@@ -1,8 +1,8 @@
-import * as React from "react";
+import { useState } from "react";
 import { Clock, Film, Mic, Music, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
-
-import { Button, Badge } from "@/components/ui";
-import type { Screenplay, ScreenplayScene } from "@/api";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Screenplay, ScreenplayScene } from "@/api/video-generation-service";
 
 interface ScreenplayPreviewProps {
   screenplay: Screenplay;
@@ -12,7 +12,7 @@ interface ScreenplayPreviewProps {
 }
 
 function SceneCard({ scene }: { scene: ScreenplayScene }) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <div className="glass space-y-3 rounded-xl p-4">

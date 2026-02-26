@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/api/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Button,
-  Input,
-  Label,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-  Checkbox,
-} from "@/components/ui";
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);

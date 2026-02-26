@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User,
@@ -28,14 +28,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, Input, Label, Switch, Badge, Separator, Progress } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
   accountService,
   type AccountInfo,
   type BillingInfo,
   type UserPreferences,
   DEFAULT_PREFERENCES,
-} from "@/api";
+} from "@/api/account-service";
 import {
   Select,
   SelectContent,
@@ -45,7 +51,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth, useTheme } from "@/common/contexts";
+import { useAuth } from "@/common/contexts/AuthContext";
+import { useTheme } from "@/common/contexts/ThemeContext";
 import { useSearchParams } from "react-router-dom";
 
 const defaultPreferences: UserPreferences = DEFAULT_PREFERENCES;
@@ -101,18 +108,18 @@ const Settings = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "account";
 
-  const [preferences, setPreferences] = React.useState<UserPreferences>(defaultPreferences);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [hasChanges, setHasChanges] = React.useState(false);
+  const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Account & Billing state
-  const [accountInfo, setAccountInfo] = React.useState<AccountInfo | null>(null);
-  const [billingInfo, setBillingInfo] = React.useState<BillingInfo | null>(null);
-  const [accountLoading, setAccountLoading] = React.useState(true);
-  const [accountError, setAccountError] = React.useState<string | null>(null);
+  const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
+  const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
+  const [accountLoading, setAccountLoading] = useState(true);
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   // Load preferences from backend (with localStorage fallback)
-  React.useEffect(() => {
+  useEffect(() => {
     async function loadPreferences() {
       if (!user?.id) {
         // Fall back to localStorage if no user
@@ -149,7 +156,7 @@ const Settings = () => {
   }, [user?.id]);
 
   // Load account and billing info
-  React.useEffect(() => {
+  useEffect(() => {
     async function loadAccountData() {
       if (!user?.id) {
         return;

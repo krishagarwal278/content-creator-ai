@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useRef, type DragEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Upload, FileText, X, File } from "lucide-react";
 
@@ -17,20 +17,20 @@ interface FileUploadZoneProps {
 }
 
 export function FileUploadZone({ files, onFilesChange }: FileUploadZoneProps) {
-  const [isDragOver, setIsDragOver] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     const droppedFiles = Array.from(e.dataTransfer.files);

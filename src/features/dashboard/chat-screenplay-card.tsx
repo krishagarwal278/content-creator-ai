@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 import {
   Clock,
   Film,
@@ -12,8 +12,9 @@ import {
   EyeOff,
 } from "lucide-react";
 
-import { Button, Badge } from "@/components/ui";
-import type { Screenplay, ScreenplayScene } from "@/api";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Screenplay, ScreenplayScene } from "@/api/video-generation-service";
 import { cn } from "@/lib/utils";
 
 interface ChatScreenplayCardProps {
@@ -89,8 +90,8 @@ export function ChatScreenplayCard({
   isLatest = false,
   onAccept,
 }: ChatScreenplayCardProps) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
-  const [showAllScenes, setShowAllScenes] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [showAllScenes, setShowAllScenes] = useState(false);
 
   const displayedScenes = showAllScenes ? screenplay.scenes : screenplay.scenes.slice(0, 3);
   const hasMoreScenes = screenplay.scenes.length > 3;

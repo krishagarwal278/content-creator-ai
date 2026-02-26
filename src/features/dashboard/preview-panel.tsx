@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import {
   Play,
   Download,
@@ -13,21 +13,16 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import {
-  Button,
-  Input,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Progress,
-  useToast,
-} from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
 import { VideoPreviewGrid } from "./video-preview-grid";
 import { ProjectHistory } from "./project-history";
 import { ScreenplayPreview } from "./screenplay-preview";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
-import { videoGenerationService, type Screenplay } from "@/api";
+import { videoGenerationService, type Screenplay } from "@/api/video-generation-service";
 
 interface PreviewPanelProps {
   onSelectVideo?: (video: PexelsVideo) => void;
@@ -48,30 +43,30 @@ export function PreviewPanel({
   initialVideoUrl,
   initialVideoId,
 }: PreviewPanelProps) {
-  const [videoQuery, setVideoQuery] = React.useState("");
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [activeMainTab, setActiveMainTab] = React.useState<string>("video");
+  const [videoQuery, setVideoQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeMainTab, setActiveMainTab] = useState<string>("video");
 
   // Video generation state
-  const [isGeneratingVideo, setIsGeneratingVideo] = React.useState(false);
-  const [videoUrl, setVideoUrl] = React.useState<string | null>(null);
-  const [videoProgress, setVideoProgress] = React.useState(0);
-  const [videoError, setVideoError] = React.useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const pollingRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
 
   // Auto-switch to screenplay tab when a new screenplay is generated
-  React.useEffect(() => {
+  useEffect(() => {
     if (screenplay) {
       setActiveMainTab("screenplay");
     }
   }, [screenplay]);
 
   // Handle initial video URL from generation
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialVideoUrl) {
       setVideoUrl(initialVideoUrl);
       setActiveMainTab("video");
@@ -79,7 +74,7 @@ export function PreviewPanel({
   }, [initialVideoUrl]);
 
   // Cleanup polling on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
@@ -87,12 +82,12 @@ export function PreviewPanel({
     };
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     setSearchQuery(videoQuery);
   };
 
-  const pollVideoStatus = React.useCallback(
+  const pollVideoStatus = useCallback(
     async (videoId: string) => {
       pollingRef.current = setInterval(async () => {
         try {
@@ -131,7 +126,7 @@ export function PreviewPanel({
   );
 
   // Handle initial video ID - start polling
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialVideoId) {
       setIsGeneratingVideo(true);
       pollVideoStatus(initialVideoId);

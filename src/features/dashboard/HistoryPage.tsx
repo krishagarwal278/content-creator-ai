@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock,
@@ -19,7 +19,9 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
-import { Button, Input, Badge } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -28,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/common/contexts";
+import { useAuth } from "@/common/contexts/AuthContext";
 import {
   videoGenerationService,
   type GenerationHistoryEntry,
@@ -337,18 +339,18 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
 const History = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [history, setHistory] = React.useState<GenerationHistoryEntry[]>([]);
-  const [videos, setVideos] = React.useState<GenerationHistoryEntry[]>([]);
-  const [stats, setStats] = React.useState<GenerationStats | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
-  const [page, setPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [activeTab, setActiveTab] = React.useState("all");
+  const [history, setHistory] = useState<GenerationHistoryEntry[]>([]);
+  const [videos, setVideos] = useState<GenerationHistoryEntry[]>([]);
+  const [stats, setStats] = useState<GenerationStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const fetchHistory = React.useCallback(async () => {
+  const fetchHistory = useCallback(async () => {
     if (!user?.id) {
       return;
     }
@@ -378,11 +380,11 @@ const History = () => {
     }
   }, [user?.id, page, statusFilter]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
 
-  const filteredHistory = React.useMemo(() => {
+  const filteredHistory = useMemo(() => {
     if (!searchQuery) {
       return history;
     }
@@ -391,7 +393,7 @@ const History = () => {
     );
   }, [history, searchQuery]);
 
-  const filteredVideos = React.useMemo(() => {
+  const filteredVideos = useMemo(() => {
     if (!searchQuery) {
       return videos;
     }

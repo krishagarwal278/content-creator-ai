@@ -68,11 +68,15 @@ export default defineConfig(({ mode }): UserConfig => {
       // Rollup-specific options for chunking
       rollupOptions: {
         output: {
-          // Manual chunk splitting for better caching (inspired by OpenShift)
+          // Manual chunk splitting: smaller initial load + stable cacheable vendor chunks
           manualChunks: {
-            // Vendor chunk for React ecosystem
             "vendor-react": ["react", "react-dom", "react-router-dom"],
-            // UI library chunk
+            "vendor-mui": [
+              "@mui/material",
+              "@mui/icons-material",
+              "@emotion/react",
+              "@emotion/styled",
+            ],
             "vendor-ui": [
               "@radix-ui/react-dialog",
               "@radix-ui/react-dropdown-menu",
@@ -81,11 +85,8 @@ export default defineConfig(({ mode }): UserConfig => {
               "@radix-ui/react-popover",
               "@radix-ui/react-select",
             ],
-            // Form handling chunk
             "vendor-forms": ["react-hook-form", "@hookform/resolvers", "zod"],
-            // Data fetching chunk
             "vendor-data": ["@tanstack/react-query", "@supabase/supabase-js"],
-            // Charts chunk (usually large)
             "vendor-charts": ["recharts"],
           },
           // Content-based hashing for long-term caching
@@ -103,6 +104,7 @@ export default defineConfig(({ mode }): UserConfig => {
         "react",
         "react-dom",
         "react-router-dom",
+        "react-error-boundary",
         "@tanstack/react-query",
         "lucide-react",
         "clsx",

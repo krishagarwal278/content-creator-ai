@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Play, ExternalLink } from "lucide-react";
 import { Grid, Card, Box, Typography, Skeleton, Link } from "@mui/material";
 
@@ -98,16 +98,16 @@ interface VideoCardProps {
 }
 
 function VideoCard({ video, onClick }: VideoCardProps) {
-  const [isHovering, setIsHovering] = React.useState(false);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Get the best quality video file that's not too large
-  const videoFile = React.useMemo(() => {
+  const videoFile = useMemo(() => {
     const sorted = [...video.videoFiles].sort((a, b) => b.width - a.width);
     return sorted.find((f) => f.width <= 1280) || sorted[0];
   }, [video.videoFiles]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (videoRef.current) {
       if (isHovering) {
         videoRef.current.play().catch(() => {});

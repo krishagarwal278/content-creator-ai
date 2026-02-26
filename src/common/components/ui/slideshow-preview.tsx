@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,14 +28,14 @@ export function SlideshowPreview({
   className,
   onDownload,
 }: SlideshowPreviewProps) {
-  const [currentSlide, setCurrentSlide] = React.useState(0);
-  const [isPlaying, setIsPlaying] = React.useState(autoPlay);
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const slide = slides[currentSlide];
 
   // Auto-advance slides when playing
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isPlaying || slides.length <= 1) {
       return;
     }
@@ -48,7 +48,7 @@ export function SlideshowPreview({
   }, [isPlaying, slides.length]);
 
   // Handle keyboard navigation in fullscreen
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isFullscreen) {
       return;
     }
