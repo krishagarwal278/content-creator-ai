@@ -9,24 +9,24 @@ import {
   Mic,
   Upload,
   Download,
-  Languages,
+  Volume2,
   BookOpen,
   GraduationCap,
   CheckCircle2,
   Loader2,
   Presentation,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Button,
-  Input,
-  Label,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  SlideshowPreview,
-} from "@/components/ui";
+} from "@/components/ui/dialog";
+import { SlideshowPreview } from "@/components/ui/slideshow-preview";
 import {
   Select,
   SelectContent,
@@ -667,14 +667,15 @@ const LandingPage = () => {
               </p>
             </div>
 
-            {/* Multilingual */}
+            {/* English voiceover */}
             <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <Languages className="h-6 w-6 text-primary" />
+                <Volume2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">35+ Languages</h3>
+              <h3 className="mb-2 text-lg font-semibold">Professional English Voiceover</h3>
               <p className="text-sm text-muted-foreground">
-                Reach global audiences with AI dubbing. Same course, multiple languages, one click.
+                Natural-sounding narration in English. We focus on quality first — more languages
+                coming soon.
               </p>
             </div>
 
@@ -723,7 +724,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-0.5 text-destructive">✗</span>
-                  <span>One language at a time</span>
+                  <span>Manual recording in one language only</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-0.5 text-destructive">✗</span>
@@ -750,7 +751,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>35+ languages with one click</span>
+                  <span>Professional English narration — no recording needed</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -922,7 +923,7 @@ const LandingPage = () => {
                       <SelectItem value="summarize_concepts">Editing is tedious</SelectItem>
                       <SelectItem value="study_faster">Voice quality issues</SelectItem>
                       <SelectItem value="build_courses">Keeping content updated</SelectItem>
-                      <SelectItem value="content_creation">Multilingual content</SelectItem>
+                      <SelectItem value="content_creation">Scaling content</SelectItem>
                       <SelectItem value="experimenting">Production costs</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1166,7 +1167,7 @@ const LandingPage = () => {
                     <SelectItem value="summarize_concepts">Editing tedium</SelectItem>
                     <SelectItem value="study_faster">Voice quality</SelectItem>
                     <SelectItem value="build_courses">Keeping updated</SelectItem>
-                    <SelectItem value="content_creation">Multi-language</SelectItem>
+                    <SelectItem value="content_creation">Scaling content</SelectItem>
                     <SelectItem value="experimenting">Costs</SelectItem>
                   </SelectContent>
                 </Select>

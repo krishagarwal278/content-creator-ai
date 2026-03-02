@@ -23,9 +23,13 @@ export interface SlideshowResponse {
 
 export type SlideshowStyle = "modern" | "minimal" | "corporate" | "creative";
 
+/** Content AI model for slideshow generation: "kimi" or "openai" (GPT-4o) */
+export type ContentAiModel = "kimi" | "openai";
+
 export interface SlideshowPreviewOptions {
   style?: SlideshowStyle;
   userId?: string;
+  contentAiModel?: ContentAiModel;
 }
 
 export interface SlideshowRequest {
@@ -34,6 +38,7 @@ export interface SlideshowRequest {
   maxSlides?: number;
   style?: SlideshowStyle;
   userId?: string;
+  contentAiModel?: ContentAiModel;
 }
 
 /**
@@ -155,7 +160,78 @@ export async function generateSlideshow(request: SlideshowRequest): Promise<Slid
   }
 }
 
+export interface ExportSlideshowRequest {
+  slides: SlideData[];
+  title: string;
+  format: "pptx" | "pdf";
+}
+
+export interface ExportSlideshowResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Export slideshow as PPTX or PDF. POSTs to backend, then triggers file download
+ * using the response blob and filename from Content-Disposition or default.
+ */
+export async function exportSlideshow(
+  request: ExportSlideshowRequest,
+): Promise<ExportSlideshowResult> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/video/export-slideshow`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slides: request.slides,
+        title: request.title,
+        format: request.format,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: "Export failed" }));
+      return { success: false, error: err.message || `HTTP ${response.status}: Export failed` };
+    }
+
+    const blob = await response.blob();
+    let filename = request.format === "pptx" ? "slideshow.pptx" : "slideshow.pdf";
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition) {
+      const match =
+        disposition.match(/filename\*?=(?:UTF-8'')?"?([^";\n]+)"?/i) ??
+        disposition.match(/filename="?([^";\n]+)"?/i);
+      if (match?.[1]) {
+        filename = match[1].trim().replace(/^["']|["']$/g, "");
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      return {
+        success: false,
+        error: `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      };
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Export failed",
+    };
+  }
+}
+
 export const slideshowService = {
   generateSlideshowPreview,
   generateSlideshow,
+  exportSlideshow,
 };

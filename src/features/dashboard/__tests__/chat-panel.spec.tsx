@@ -6,10 +6,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatPanel } from "../chat-panel";
-import type { Screenplay } from "@/api";
+import type { Screenplay } from "@/api/video-generation-service";
 
-// Mock the video generation service
-vi.mock("@/api", () => ({
+// Mock the video generation service (direct module used by chat-panel)
+vi.mock("@/api/video-generation-service", () => ({
   videoGenerationService: {
     enhanceScreenplay: vi.fn(),
     generateActualVideo: vi.fn(),
@@ -293,7 +293,7 @@ describe("ChatPanel", () => {
 
     it("should show typing indicator while processing", async () => {
       const user = userEvent.setup();
-      const { videoGenerationService } = await import("@/api");
+      const { videoGenerationService } = await import("@/api/video-generation-service");
 
       vi.mocked(videoGenerationService.chatIdeate).mockImplementation(
         () =>
@@ -303,8 +303,8 @@ describe("ChatPanel", () => {
                 resolve({
                   success: true,
                   message: "Test response",
-                }),
-              500,
+                } as Awaited<ReturnType<typeof videoGenerationService.chatIdeate>>),
+              300,
             ),
           ),
       );
@@ -321,16 +321,19 @@ describe("ChatPanel", () => {
       await user.type(input, "Test message");
       await user.keyboard("{Enter}");
 
-      // Typing indicator should appear briefly
-      await waitFor(() => {
-        const dots = document.querySelectorAll(".animate-bounce");
-        expect(dots.length).toBeGreaterThan(0);
-      });
+      // Typing indicator (bouncing dots) should appear while chatIdeate is in flight
+      await waitFor(
+        () => {
+          const dots = document.querySelectorAll(".animate-bounce");
+          expect(dots.length).toBeGreaterThan(0);
+        },
+        { timeout: 500 },
+      );
     });
 
     it("should add assistant response after user message in ideation mode", async () => {
       const user = userEvent.setup();
-      const { videoGenerationService } = await import("@/api");
+      const { videoGenerationService } = await import("@/api/video-generation-service");
 
       vi.mocked(videoGenerationService.chatIdeate).mockResolvedValue({
         success: true,

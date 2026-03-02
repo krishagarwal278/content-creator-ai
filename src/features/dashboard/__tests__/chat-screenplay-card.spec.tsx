@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatScreenplayCard } from "../chat-screenplay-card";
-import type { Screenplay } from "@/api";
+import type { Screenplay } from "@/api/video-generation-service";
 
 describe("ChatScreenplayCard", () => {
   const createScreenplay = (overrides: Partial<Screenplay> = {}): Screenplay => ({

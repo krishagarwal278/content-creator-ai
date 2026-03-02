@@ -7,13 +7,17 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GenerationPanel } from "../generation-panel";
 
-// Mock the API services
-vi.mock("@/api", () => ({
+// Mock API modules (direct imports per architecture)
+vi.mock("@/api/storage-service", () => ({
   storageService: {
     getProjectFiles: vi.fn().mockResolvedValue([]),
     uploadFile: vi.fn().mockResolvedValue({}),
   },
+}));
+vi.mock("@/api/video-generation-service", () => ({
   generateVideo: vi.fn(),
+}));
+vi.mock("@/api/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn().mockResolvedValue({
@@ -32,7 +36,9 @@ vi.mock("sonner", () => ({
   },
 }));
 
-import { generateVideo, storageService, supabase } from "@/api";
+import { generateVideo } from "@/api/video-generation-service";
+import { storageService } from "@/api/storage-service";
+import { supabase } from "@/api/client";
 import { toast } from "sonner";
 
 describe("GenerationPanel", () => {

@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import {
   Wand2,
   Loader2,
@@ -9,33 +9,40 @@ import {
   Sparkles,
   Presentation,
   Grid3X3,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ModelSelector, VideoModelSelector } from "@/components/ui/model-selector";
+import { ContentTypeSelector } from "@/components/ui/content-type-selector";
+import { FileUploadZone, type UploadedFile } from "@/components/ui/file-upload-zone";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { SlideshowPreview, SlideshowGrid } from "@/components/ui/slideshow-preview";
 import {
-  ModelSelector,
-  VideoModelSelector,
-  ContentTypeSelector,
-  FileUploadZone,
-  Button,
-  Slider,
-  Label,
-  Switch,
-  Textarea,
-  SlideshowPreview,
-  SlideshowGrid,
-  type UploadedFile,
-} from "@/components/ui";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
-import { storageService, generateVideo, supabase, type VideoFormat, type Screenplay } from "@/api";
+import { storageService } from "@/api/storage-service";
+import { generateVideo, type VideoFormat, type Screenplay } from "@/api/video-generation-service";
+import { supabase } from "@/api/client";
 import { parseDocuments, type ParsedDocument } from "@/common/utils/document-parser";
 import { generateTextToVideo } from "@/api/fal-video-service";
 import {
   generateSlideshowPreview,
   generateSlideshow,
+  exportSlideshow,
   type SlideData,
   type SlideshowStyle,
+  type ContentAiModel,
 } from "@/api/slideshow-service";
 
 async function extractTextFromFiles(files: UploadedFile[]): Promise<{
@@ -75,30 +82,32 @@ export function GenerationPanel({
   onAiModelChange,
   onFormatChange,
 }: GenerationPanelProps) {
-  const [selectedModel, setSelectedModel] = React.useState("gpt-4o");
-  const [selectedVideoModel, setSelectedVideoModel] = React.useState("fal-ai/ovi");
-  const [contentType, setContentType] = React.useState<
-    "reel" | "short" | "vfx_movie" | "presentation"
-  >("reel");
-  const [files, setFiles] = React.useState<UploadedFile[]>([]);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
-  const [isTestingVideo, setIsTestingVideo] = React.useState(false);
-  const [duration, setDuration] = React.useState([30]);
-  const [voiceover, setVoiceover] = React.useState(true);
-  const [captions, setCaptions] = React.useState(true);
-  const [topic, setTopic] = React.useState("");
-  const [extractedContent, setExtractedContent] = React.useState<{
+  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [selectedVideoModel, setSelectedVideoModel] = useState("fal-ai/ovi");
+  const [contentType, setContentType] = useState<"reel" | "short" | "vfx_movie" | "presentation">(
+    "reel",
+  );
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isTestingVideo, setIsTestingVideo] = useState(false);
+  const [duration, setDuration] = useState([30]);
+  const [voiceover, setVoiceover] = useState(true);
+  const [captions, setCaptions] = useState(true);
+  const [topic, setTopic] = useState("");
+  const [extractedContent, setExtractedContent] = useState<{
     text: string;
     documents: ParsedDocument[];
   } | null>(null);
-  const [testVideoUrl, setTestVideoUrl] = React.useState<string | null>(null);
+  const [testVideoUrl, setTestVideoUrl] = useState<string | null>(null);
 
   // Slideshow state
-  const [isGeneratingSlideshow, setIsGeneratingSlideshow] = React.useState(false);
-  const [slideshowSlides, setSlideshowSlides] = React.useState<SlideData[] | null>(null);
-  const [slideshowStyle, setSlideshowStyle] = React.useState<SlideshowStyle>("modern");
-  const [slideshowView, setSlideshowView] = React.useState<"carousel" | "grid">("carousel");
+  const [isGeneratingSlideshow, setIsGeneratingSlideshow] = useState(false);
+  const [slideshowSlides, setSlideshowSlides] = useState<SlideData[] | null>(null);
+  const [slideshowStyle, setSlideshowStyle] = useState<SlideshowStyle>("modern");
+  const [slideshowView, setSlideshowView] = useState<"carousel" | "grid">("carousel");
+  const [contentAiModel, setContentAiModel] = useState<ContentAiModel>("openai");
+  const [isExportingSlideshow, setIsExportingSlideshow] = useState<"pptx" | "pdf" | null>(null);
 
   const formatMap: Record<string, VideoFormat> = {
     reel: "reel",
@@ -107,16 +116,16 @@ export function GenerationPanel({
     presentation: "presentation",
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     onAiModelChange?.(selectedModel);
   }, [selectedModel, onAiModelChange]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     onFormatChange?.(formatMap[contentType] || "reel");
   }, [contentType, onFormatChange]);
 
   // Load existing project data
-  React.useEffect(() => {
+  useEffect(() => {
     const loadProjectData = async () => {
       if (existingProject) {
         setSelectedModel(existingProject.model || "gpt-4o");
@@ -389,6 +398,7 @@ Academic and informative tone suitable for online learning platforms.`;
       const result = await generateSlideshowPreview(content, {
         style: slideshowStyle,
         userId: user?.id,
+        contentAiModel,
       });
 
       if (result.success && result.slides) {
@@ -432,6 +442,7 @@ Academic and informative tone suitable for online learning platforms.`;
         maxSlides,
         style: slideshowStyle,
         userId: user?.id,
+        contentAiModel,
       });
 
       if (result.success && result.slides) {
@@ -448,6 +459,31 @@ Academic and informative tone suitable for online learning platforms.`;
     }
   };
 
+  const slideshowTitle = extractedContent?.documents[0]?.title || topic.slice(0, 50) || "Slideshow";
+
+  const handleExportSlideshow = async (format: "pptx" | "pdf") => {
+    if (!slideshowSlides?.length) {
+      return;
+    }
+    setIsExportingSlideshow(format);
+    try {
+      const result = await exportSlideshow({
+        slides: slideshowSlides,
+        title: slideshowTitle,
+        format,
+      });
+      if (result.success) {
+        toast.success(`Downloaded as ${format.toUpperCase()}`);
+      } else {
+        toast.error(result.error || "Export failed");
+      }
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setIsExportingSlideshow(null);
+    }
+  };
+
   // Download slideshow as JSON (can be used to recreate or export)
   const handleDownloadSlideshow = () => {
     if (!slideshowSlides) {
@@ -455,7 +491,7 @@ Academic and informative tone suitable for online learning platforms.`;
     }
 
     const slideshowData = {
-      title: extractedContent?.documents[0]?.title || topic.slice(0, 50) || "Slideshow",
+      title: slideshowTitle,
       style: slideshowStyle,
       slides: slideshowSlides,
       generatedAt: new Date().toISOString(),
@@ -528,15 +564,15 @@ Academic and informative tone suitable for online learning platforms.`;
         {/* Slideshow Preview - Full Width */}
         {slideshowSlides && slideshowSlides.length > 0 && (
           <div className="-mx-4 mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 md:-mx-6 md:p-6">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Presentation className="h-5 w-5 text-primary" />
                 <span className="text-base font-semibold text-primary">
                   Slideshow Generated ({slideshowSlides.length} slides)
                 </span>
               </div>
-              {/* View Toggle */}
               <div className="flex items-center gap-2">
+                {/* View Toggle */}
                 <div className="flex items-center gap-1 rounded-lg bg-secondary p-1">
                   <button
                     onClick={() => setSlideshowView("carousel")}
@@ -563,6 +599,35 @@ Academic and informative tone suitable for online learning platforms.`;
                     Grid
                   </button>
                 </div>
+                {/* Download as PPT / PDF */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => handleExportSlideshow("pptx")}
+                  disabled={!!isExportingSlideshow}
+                >
+                  {isExportingSlideshow === "pptx" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  Download as PPT
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => handleExportSlideshow("pdf")}
+                  disabled={!!isExportingSlideshow}
+                >
+                  {isExportingSlideshow === "pdf" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  Download as PDF
+                </Button>
               </div>
             </div>
 
@@ -745,6 +810,24 @@ Academic and informative tone suitable for online learning platforms.`;
               <p className="text-xs text-muted-foreground">
                 Each slide is ~30 seconds with narration
               </p>
+            </div>
+
+            {/* Content AI model for slideshow generation */}
+            <div className="space-y-2">
+              <Label className="text-sm">Content AI</Label>
+              <Select
+                value={contentAiModel}
+                onValueChange={(v) => setContentAiModel(v as ContentAiModel)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">GPT-4o</SelectItem>
+                  <SelectItem value="kimi">Kimi</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Model used to generate slide content</p>
             </div>
 
             <div className="flex items-center justify-between py-2">

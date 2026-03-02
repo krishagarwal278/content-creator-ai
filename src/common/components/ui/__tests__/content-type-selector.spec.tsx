@@ -30,7 +30,7 @@ describe("ContentTypeSelector", () => {
       expect(screen.getByText("Vertical short-form")).toBeInTheDocument();
       expect(screen.getByText("Quick explainer")).toBeInTheDocument();
       expect(screen.getByText("Cinematic content")).toBeInTheDocument();
-      expect(screen.getByText("Slide narration")).toBeInTheDocument();
+      expect(screen.getByText("AI slideshow with narration")).toBeInTheDocument();
     });
 
     it("should display duration for each type", () => {
@@ -88,29 +88,15 @@ describe("ContentTypeSelector", () => {
     it("should show 'Soon' badge for VFX Movie", () => {
       render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
 
-      const vfxSection = screen.getByText("VFX Movie").closest("button");
-      expect(vfxSection).toContainElement(screen.getAllByText("Soon")[0]);
-    });
-
-    it("should show 'Soon' badge for Presentation", () => {
-      render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
-
-      const presentationSection = screen.getByText("Presentation").closest("button");
-      expect(presentationSection).toContainElement(screen.getAllByText("Soon")[1]);
+      const vfxButton = screen.getByRole("button", { name: /VFX Movie/i });
+      expect(vfxButton).toContainElement(screen.getByText("Soon"));
     });
 
     it("should disable VFX Movie option", () => {
       render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
 
-      const vfxButton = screen.getByText("VFX Movie").closest("button");
+      const vfxButton = screen.getByRole("button", { name: /VFX Movie/i });
       expect(vfxButton).toBeDisabled();
-    });
-
-    it("should disable Presentation option", () => {
-      render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
-
-      const presentationButton = screen.getByText("Presentation").closest("button");
-      expect(presentationButton).toBeDisabled();
     });
 
     it("should not call onValueChange when clicking disabled option", async () => {
@@ -118,8 +104,8 @@ describe("ContentTypeSelector", () => {
 
       render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
 
-      const vfxButton = screen.getByText("VFX Movie").closest("button");
-      await user.click(vfxButton!);
+      const vfxButton = screen.getByRole("button", { name: /VFX Movie/i });
+      await user.click(vfxButton);
 
       expect(mockOnValueChange).not.toHaveBeenCalled();
     });
@@ -127,14 +113,14 @@ describe("ContentTypeSelector", () => {
     it("should apply reduced opacity to disabled options", () => {
       render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
 
-      const vfxButton = screen.getByText("VFX Movie").closest("button");
+      const vfxButton = screen.getByRole("button", { name: /VFX Movie/i });
       expect(vfxButton).toHaveClass("opacity-50");
     });
 
     it("should apply cursor-not-allowed to disabled options", () => {
       render(<ContentTypeSelector value="reel" onValueChange={mockOnValueChange} />);
 
-      const vfxButton = screen.getByText("VFX Movie").closest("button");
+      const vfxButton = screen.getByRole("button", { name: /VFX Movie/i });
       expect(vfxButton).toHaveClass("cursor-not-allowed");
     });
   });

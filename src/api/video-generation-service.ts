@@ -2,6 +2,26 @@
 
 export type VideoFormat = "reel" | "short_video" | "vfx_movie" | "presentation";
 
+/** AI voice option for voiceover selection */
+export interface AiVoiceOption {
+  id: string;
+  name: string;
+  description?: string;
+  language?: string;
+}
+
+/** Voiceover mode: AI (with voiceId) or personal (uploaded/recorded audio) */
+export type VoiceoverMode = "ai" | "personal";
+
+export interface VoiceoverOptions {
+  enabled: boolean;
+  mode: VoiceoverMode;
+  /** When mode is "ai", which voice to use */
+  voiceId?: string;
+  /** When mode is "personal", URL of uploaded/recorded audio (or project audio) */
+  personalAudioUrl?: string;
+}
+
 export interface VideoGenerationRequest {
   projectId?: string;
   projectName: string;
@@ -11,6 +31,10 @@ export interface VideoGenerationRequest {
   aiModel: string;
   enableVoiceover: boolean;
   enableCaptions: boolean;
+  /** When enableVoiceover is true: "ai" uses voiceId, "personal" uses personalAudioUrl */
+  voiceoverMode?: VoiceoverMode;
+  voiceId?: string;
+  personalAudioUrl?: string;
   backgroundVideo?: {
     id: string;
     url: string;
@@ -94,6 +118,40 @@ export interface ChatIdeateResponse {
     type: "add" | "modify" | "remove" | "general";
   }>;
 }
+
+/** Default set of AI voices for voiceover — English only for now; more languages later */
+export const DEFAULT_AI_VOICES: AiVoiceOption[] = [
+  {
+    id: "professional-m",
+    name: "Professional (Male)",
+    description: "Clear, authoritative",
+    language: "en",
+  },
+  {
+    id: "professional-f",
+    name: "Professional (Female)",
+    description: "Clear, authoritative",
+    language: "en",
+  },
+  { id: "friendly-m", name: "Friendly (Male)", description: "Warm, approachable", language: "en" },
+  {
+    id: "friendly-f",
+    name: "Friendly (Female)",
+    description: "Warm, approachable",
+    language: "en",
+  },
+  { id: "energetic-m", name: "Energetic (Male)", description: "Upbeat, engaging", language: "en" },
+  {
+    id: "energetic-f",
+    name: "Energetic (Female)",
+    description: "Upbeat, engaging",
+    language: "en",
+  },
+  { id: "calm-m", name: "Calm (Male)", description: "Soothing, measured", language: "en" },
+  { id: "calm-f", name: "Calm (Female)", description: "Soothing, measured", language: "en" },
+  { id: "narrator-m", name: "Narrator (Male)", description: "Documentary style", language: "en" },
+  { id: "narrator-f", name: "Narrator (Female)", description: "Documentary style", language: "en" },
+];
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 

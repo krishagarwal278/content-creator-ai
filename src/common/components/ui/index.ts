@@ -58,5 +58,6 @@ export * from "./toast";
 // export * from "./toaster";
 export * from "./toggle";
 export * from "./toggle-group";
+export * from "./voiceover-selector";
 export * from "./tooltip";
 export * from "./use-toast";
