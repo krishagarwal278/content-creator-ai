@@ -53,13 +53,16 @@ src/
 
 ## Environment Variables
 
-Create a `.env` file with:
+Copy `.env.example` to `.env` and set:
 
 ```
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
 VITE_BACKEND_URL=http://localhost:4000
 ```
+
+- **Local:** `VITE_BACKEND_URL` should be your local backend (e.g. `http://localhost:4000`).
+- **Production (e.g. Vercel):** Set `VITE_BACKEND_URL` in the project’s environment to your Railway backend URL (e.g. `https://YOUR-APP.up.railway.app`, no trailing slash). Otherwise the app will try to call localhost in the user’s browser and fail.
 
 The backend (Express, video/voice/slideshow APIs) is in a separate repo: [github.com/krishagarwal278/supabase](https://github.com/krishagarwal278/supabase). Point `VITE_BACKEND_URL` at that service.
 

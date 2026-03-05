@@ -15,7 +15,7 @@ export default defineConfig(({ mode }): UserConfig => {
     // Development Server
     server: {
       host: "::",
-      port: 8081,
+      port: 5173,
       strictPort: false,
       // Enable HMR with overlay for development errors
       hmr: {
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }): UserConfig => {
 
     // Preview Server (for testing production builds locally)
     preview: {
-      port: 8082,
+      port: 5173,
     },
 
     plugins: [
