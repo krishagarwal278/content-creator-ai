@@ -6,7 +6,6 @@ import {
   Video,
   FileText,
   Play,
-  Sparkles,
   Presentation,
   Grid3X3,
   Download,
@@ -35,9 +34,7 @@ import { storageService } from "@/api/storage-service";
 import { generateVideo, type VideoFormat, type Screenplay } from "@/api/video-generation-service";
 import { supabase } from "@/api/client";
 import { parseDocuments, type ParsedDocument } from "@/common/utils/document-parser";
-import { generateTextToVideo } from "@/api/fal-video-service";
 import {
-  generateSlideshowPreview,
   generateSlideshow,
   exportSlideshow,
   type SlideData,
@@ -90,7 +87,6 @@ export function GenerationPanel({
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isTestingVideo, setIsTestingVideo] = useState(false);
   const [duration, setDuration] = useState([30]);
   const [voiceover, setVoiceover] = useState(true);
   const [captions, setCaptions] = useState(true);
@@ -99,7 +95,6 @@ export function GenerationPanel({
     text: string;
     documents: ParsedDocument[];
   } | null>(null);
-  const [testVideoUrl, setTestVideoUrl] = useState<string | null>(null);
 
   // Slideshow state
   const [isGeneratingSlideshow, setIsGeneratingSlideshow] = useState(false);
@@ -322,98 +317,6 @@ export function GenerationPanel({
   };
 
   const canGenerate = topic.trim().length > 0;
-
-  // Quick test video generation using fal.ai (via backend)
-  const handleTestVideo = async () => {
-    if (!extractedContent?.text && !topic.trim()) {
-      toast.error("Please add a topic or upload a document first");
-      return;
-    }
-
-    setIsTestingVideo(true);
-    setTestVideoUrl(null);
-
-    try {
-      // Get current user for the request
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      // Create a prompt from the extracted content or topic
-      const contentSummary = extractedContent?.text
-        ? extractedContent.text.substring(0, 500)
-        : topic;
-
-      const videoPrompt = `Educational course video about: ${contentSummary}. 
-Professional presentation style with clear visuals, smooth transitions, and engaging graphics. 
-Academic and informative tone suitable for online learning platforms.`;
-
-      toast.info("Generating test video via backend (this may take 1-2 minutes)...");
-
-      const result = await generateTextToVideo({
-        prompt: videoPrompt,
-        duration: 5,
-        aspectRatio: "16:9",
-        model: "minimax",
-        userId: user?.id,
-      });
-
-      if (result.success && result.videoUrl) {
-        setTestVideoUrl(result.videoUrl);
-        if (result.warning) {
-          toast.warning(result.warning);
-        } else {
-          toast.success("Test video generated and saved to storage!");
-        }
-      } else {
-        toast.error(result.error || "Failed to generate test video");
-      }
-    } catch (error) {
-      console.error("Test video error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate test video");
-    } finally {
-      setIsTestingVideo(false);
-    }
-  };
-
-  // Slideshow preview generation (4 slides)
-  const handleSlideshowPreview = async () => {
-    if (!extractedContent?.text && !topic.trim()) {
-      toast.error("Please add a topic or upload a document first");
-      return;
-    }
-
-    setIsGeneratingSlideshow(true);
-    setSlideshowSlides(null);
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const content = extractedContent?.text || topic;
-
-      toast.info("Generating slideshow preview (4 slides)...");
-
-      const result = await generateSlideshowPreview(content, {
-        style: slideshowStyle,
-        userId: user?.id,
-        contentAiModel,
-      });
-
-      if (result.success && result.slides) {
-        setSlideshowSlides(result.slides);
-        toast.success(`Generated ${result.slideCount} slides!`);
-      } else {
-        toast.error(result.error || "Failed to generate slideshow");
-      }
-    } catch (error) {
-      console.error("Slideshow preview error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate slideshow");
-    } finally {
-      setIsGeneratingSlideshow(false);
-    }
-  };
 
   // Full slideshow generation
   const handleFullSlideshow = async () => {
@@ -647,25 +550,6 @@ Academic and informative tone suitable for online learning platforms.`;
             )}
           </div>
         )}
-
-        {/* Test Video Preview */}
-        {testVideoUrl && (
-          <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Video className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium text-accent">AI Video Generated!</span>
-            </div>
-            <video
-              src={testVideoUrl}
-              controls
-              className="w-full rounded-lg"
-              style={{ maxHeight: "300px" }}
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              This is a quick 5-second AI-generated preview.
-            </p>
-          </div>
-        )}
       </section>
 
       {/* Selected Background Video */}
@@ -723,7 +607,9 @@ Academic and informative tone suitable for online learning platforms.`;
           <div>
             <div className="mb-2 flex items-center gap-2">
               <span className="text-sm font-medium">
-                {contentType === "presentation" ? "Content AI" : "Screenplay AI"}
+                {contentType === "presentation"
+                  ? "Choose Model for Slideshows"
+                  : "Choose Model for Screenplay Generation"}
               </span>
               <span className="text-xs text-muted-foreground">
                 {contentType === "presentation"
@@ -739,7 +625,6 @@ Academic and informative tone suitable for online learning platforms.`;
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-sm font-medium">Slideshow Style</span>
-                <span className="text-xs text-muted-foreground">Visual theme for slides</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(["modern", "minimal", "corporate", "creative"] as SlideshowStyle[]).map(
@@ -758,9 +643,6 @@ Academic and informative tone suitable for online learning platforms.`;
                   ),
                 )}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Uses FLUX AI for background images with professional text overlays
-              </p>
             </div>
           ) : (
             <div>
@@ -814,7 +696,7 @@ Academic and informative tone suitable for online learning platforms.`;
 
             {/* Content AI model for slideshow generation */}
             <div className="space-y-2">
-              <Label className="text-sm">Content AI</Label>
+              <Label className="text-sm">Choose Model for Screenplay Generation</Label>
               <Select
                 value={contentAiModel}
                 onValueChange={(v) => setContentAiModel(v as ContentAiModel)}
@@ -827,17 +709,13 @@ Academic and informative tone suitable for online learning platforms.`;
                   <SelectItem value="kimi">Kimi</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Model used to generate slide content</p>
             </div>
 
             <div className="flex items-center justify-between py-2">
               <div>
                 <Label htmlFor="voiceover" className="cursor-pointer text-sm">
-                  Include Narration Script
+                  Include Speaker Notes
                 </Label>
-                <p className="text-xs text-muted-foreground">
-                  Generate speaker notes for each slide
-                </p>
               </div>
               <Switch id="voiceover" checked={voiceover} onCheckedChange={setVoiceover} />
             </div>
@@ -845,9 +723,8 @@ Academic and informative tone suitable for online learning platforms.`;
             <div className="flex items-center justify-between py-2">
               <div>
                 <Label htmlFor="captions" className="cursor-pointer text-sm">
-                  AI Background Images
+                  AI Background Images (per slide)
                 </Label>
-                <p className="text-xs text-muted-foreground">Generate unique visuals per slide</p>
               </div>
               <Switch id="captions" checked={captions} onCheckedChange={setCaptions} />
             </div>
@@ -918,7 +795,7 @@ Academic and informative tone suitable for online learning platforms.`;
           </Button>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -943,7 +820,7 @@ Academic and informative tone suitable for online learning platforms.`;
               )}
               AI Video
             </Button>
-          </div>
+          </div> */}
         </div>
       ) : (
         <Button

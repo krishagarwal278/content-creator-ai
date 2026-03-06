@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { GenerationPanel } from "./generation-panel";
 import { ChatPanel } from "./chat-panel";
 import { useProjectContext } from "@/common/contexts/ProjectContext";
@@ -13,13 +13,22 @@ import {
 
 const Index = () => {
   const { id } = useParams();
-  const { selectedVideo, setSelectedProject } = useProjectContext();
+  const navigate = useNavigate();
+  const { selectedVideo, setSelectedProject, lastProjectId, setLastProjectId } =
+    useProjectContext();
   const { data: project } = useProject(id || null);
   const { user } = useAuth();
   const [screenplay, setScreenplay] = useState<Screenplay | null>(null);
   const [generatedProjectId, setGeneratedProjectId] = useState<string | null>(null);
   const [selectedAiModel, setSelectedAiModel] = useState("gpt-4o");
   const [selectedFormat, setSelectedFormat] = useState<VideoFormat>("reel");
+
+  // Restore session: if we landed on /dashboard with no project id, go back to last opened project
+  useEffect(() => {
+    if (id === undefined && lastProjectId) {
+      navigate(`/project/${lastProjectId}`, { replace: true });
+    }
+  }, [id, lastProjectId, navigate]);
 
   useEffect(() => {
     if (project) {
@@ -51,6 +60,7 @@ const Index = () => {
   const handleScreenplayGenerated = (newScreenplay: Screenplay, projectId: string) => {
     setScreenplay(newScreenplay);
     setGeneratedProjectId(projectId);
+    setLastProjectId(projectId);
   };
 
   const handleScreenplayUpdate = (updatedScreenplay: Screenplay) => {
