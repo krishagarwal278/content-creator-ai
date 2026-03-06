@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, NavLink } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -9,8 +9,6 @@ import {
   Mic,
   Upload,
   Download,
-  Volume2,
-  BookOpen,
   GraduationCap,
   CheckCircle2,
   Loader2,
@@ -35,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/api/client";
-import { submitInterestForm } from "@/api/interest-service";
+import { submitInterestForm, getInterestStats } from "@/api/interest-service";
 import { generateSlideshowPreview, type SlideData } from "@/api/slideshow-service";
 
 const LandingPage = () => {
@@ -98,7 +96,15 @@ const LandingPage = () => {
   // Demo slideshow state
   const [demoTopic, setDemoTopic] = useState("");
   const [demoSlides, setDemoSlides] = useState<SlideData[] | null>(null);
+  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
+
+  // Fetch waitlist count on load (for hero and CTAs — no demo required)
+  useEffect(() => {
+    getInterestStats()
+      .then((stats) => setWaitlistCount(stats.total))
+      .catch(() => setWaitlistCount(null));
+  }, []);
 
   const handleDemoGenerate = async () => {
     if (!demoTopic.trim()) {
@@ -299,20 +305,57 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/80 backdrop-blur-xl">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/80 backdrop-blur-xl transition-shadow duration-200">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="Videaa"
-              className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-black/10 dark:shadow-black/30"
-            />
-            <span className="text-xl font-bold text-foreground">Videaa</span>
+          <div className="flex items-center gap-10">
+            <Link
+              to="/"
+              className="flex items-center gap-2 transition-opacity duration-200 hover:opacity-90"
+            >
+              <img
+                src="/logo.png"
+                alt="Videaa"
+                className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-black/10 dark:shadow-black/30"
+              />
+              <span className="text-xl font-semibold tracking-tight text-foreground">Videaa</span>
+            </Link>
+            <nav className="hidden items-center gap-8 md:flex">
+              <NavLink
+                to="/features"
+                className={({ isActive }) =>
+                  `text-[15px] font-medium transition-all duration-200 hover:text-foreground ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`
+                }
+              >
+                Features
+              </NavLink>
+              <NavLink
+                to="/about"
+                className={({ isActive }) =>
+                  `text-[15px] font-medium transition-all duration-200 hover:text-foreground ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`
+                }
+              >
+                About
+              </NavLink>
+              <NavLink
+                to="/pricing"
+                className={({ isActive }) =>
+                  `text-[15px] font-medium transition-all duration-200 hover:text-foreground ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`
+                }
+              >
+                Pricing
+              </NavLink>
+            </nav>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setIsDark(!isDark)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 bg-secondary/50 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 bg-secondary/50 text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground"
               aria-label="Toggle theme"
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -320,14 +363,14 @@ const LandingPage = () => {
             <button
               data-testid="beta-login-btn"
               onClick={() => setShowBetaLogin(true)}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-lg px-3 py-2 text-[15px] font-medium text-muted-foreground transition-all duration-200 hover:text-foreground"
             >
               Login
             </button>
             <Button
               data-testid="join-beta-btn"
               onClick={() => setShowInterestForm(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-[15px] font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90"
             >
               Join Beta
             </Button>
@@ -344,64 +387,61 @@ const LandingPage = () => {
 
         <div className="relative z-10 max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2">
-            <GraduationCap className="h-4 w-4 text-primary" />
-            <span className="text-sm text-primary">Built for Udemy & Coursera Instructors</span>
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5">
+            <GraduationCap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">
+              Instructors, Creators, & Learners
+            </span>
           </div>
 
           {/* Main headline */}
-          <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
-            Turn your course notes into <span className="gradient-text">engaging videos</span>
+          <h1 className="mb-4 text-4xl font-bold leading-tight md:text-6xl">
+            One platform. <span className="gradient-text">Every format.</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
-            Upload your lecture notes, slides, or PDFs. Our AI generates professional course videos
-            with voiceover narration, quizzes, and SCORM export — ready for Udemy, Coursera, or any
-            LMS.
+          {/* Subheadline — short */}
+          <p className="mx-auto mb-8 max-w-xl text-base text-muted-foreground md:text-lg">
+            Course videos, reels, short-form, and cinematic content — from slides or a prompt. Built
+            for creators who want more than a generic AI.
           </p>
 
-          {/* Quick value props */}
-          <div className="mx-auto mb-10 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>No recording required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Clone your own voice</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>SCORM 1.2 & 2004 export</span>
-            </div>
-          </div>
+          {/* One-line value props */}
+          <p className="mx-auto mb-8 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Reels & short-form
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> High-VFX & cinematic
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> LMS & SCORM export
+            </span>
+          </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          {/* CTA buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <Button
               data-testid="start-creating-btn"
               onClick={() => setShowInterestForm(true)}
               size="lg"
-              className="bg-primary px-8 py-6 text-base text-primary-foreground hover:bg-primary/90"
+              className="h-12 bg-primary px-6 text-base font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Upload Your First Document
-              <span className="ml-2">→</span>
+              Sign up — 100 credits free
             </Button>
             <Button
               data-testid="watch-demo-btn"
               variant="outline"
               onClick={() => setShowDemo(true)}
               size="lg"
-              className="border-border px-8 py-6 text-base text-foreground hover:bg-secondary"
+              className="h-12 border-border px-6 text-base font-medium hover:bg-secondary"
             >
-              See How It Works
+              See demo
             </Button>
           </div>
-
-          {/* Social proof */}
-          <p className="mt-8 text-sm text-muted-foreground">
-            Trusted by 2,000+ course creators worldwide
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {waitlistCount != null && waitlistCount >= 100
+              ? `${waitlistCount.toLocaleString()} on the list`
+              : "Early creators are already testing it — join the launch cohort."}
           </p>
         </div>
       </section>
@@ -523,20 +563,33 @@ const LandingPage = () => {
                     </Button>
                   </div>
 
+                  {/* "Preview ready" message */}
+                  <p className="text-center font-medium text-foreground">
+                    Yayy! Your slides are ready!
+                  </p>
+
                   {/* Slideshow Preview */}
                   <SlideshowPreview slides={demoSlides} autoPlay />
 
-                  {/* CTA after demo */}
-                  <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
-                    <p className="mb-3 text-sm text-muted-foreground">
-                      Like what you see? Get full slideshows with up to 15 slides, AI voiceover, and
-                      LMS export.
+                  {/* What Beta users get + urgency CTA */}
+                  <div className="mt-6 space-y-4 rounded-xl border border-primary/30 bg-primary/5 p-5">
+                    <p className="text-sm font-medium text-foreground">Beta users get:</p>
+                    <ul className="space-y-1.5 text-sm text-muted-foreground">
+                      <li>→ 15-slide presentations</li>
+                      <li>→ Screenplay + narration script</li>
+                      <li>→ Compliance framework mapping</li>
+                      <li>→ LMS-ready export</li>
+                    </ul>
+                    <p className="text-sm font-medium text-foreground">
+                      {waitlistCount != null && waitlistCount >= 100
+                        ? `Join ${waitlistCount.toLocaleString()} people waiting for full access.`
+                        : "Be among the first to get full access."}
                     </p>
                     <Button
                       onClick={() => setShowInterestForm(true)}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                     >
-                      Get Full Access — Free Beta
+                      Get early access
                     </Button>
                   </div>
                 </div>
@@ -547,215 +600,152 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-              From document to course video in 3 steps
-            </h2>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
-              Stop spending weeks recording and editing. Upload your existing content and let AI do
-              the heavy lifting.
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Step 1: Upload */}
-            <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
-              <div className="absolute -top-4 left-8 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+          <h2 className="mb-10 text-center text-2xl font-bold md:text-3xl">
+            Document → video in 3 steps
+          </h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="group relative rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
+              <div className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 1
               </div>
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-secondary">
-                <Upload className="h-7 w-7 text-primary" />
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
+                <Upload className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-3 text-xl font-semibold">Upload Your Content</h3>
-              <p className="text-muted-foreground">
-                Drop your PDF, PowerPoint, Word doc, or lecture notes. We extract and structure your
-                content automatically.
+              <h3 className="mb-1.5 text-lg font-semibold">Upload</h3>
+              <p className="text-sm text-muted-foreground">
+                PDF, PPTX, or doc. We extract and structure it.
               </p>
             </div>
-
-            {/* Step 2: AI Generates */}
-            <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
-              <div className="absolute -top-4 left-8 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            <div className="group relative rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
+              <div className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 2
               </div>
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-secondary">
-                <Sparkles className="h-7 w-7 text-primary" />
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
+                <Sparkles className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-3 text-xl font-semibold">AI Creates Your Video</h3>
-              <p className="text-muted-foreground">
-                Our AI generates explainer videos with professional voiceover narration, visuals,
-                and auto-generated quiz questions.
+              <h3 className="mb-1.5 text-lg font-semibold">AI generates</h3>
+              <p className="text-sm text-muted-foreground">
+                Slides, script, voiceover, and quizzes.
               </p>
             </div>
-
-            {/* Step 3: Export */}
-            <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
-              <div className="absolute -top-4 left-8 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            <div className="group relative rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
+              <div className="absolute -top-3 left-6 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                 3
               </div>
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-secondary">
-                <Download className="h-7 w-7 text-primary" />
-              </div>
-              <h3 className="mb-3 text-xl font-semibold">Export Anywhere</h3>
-              <p className="text-muted-foreground">
-                Download as MP4 for Udemy, SCORM packages for any LMS, or Coursera-ready formats
-                with chapter markers.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid Section */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">Everything course creators need</h2>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
-              The only platform that takes your existing course content and produces actual
-              instructional videos — not just outlines.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Document Upload */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold">Document Upload</h3>
-              <p className="text-sm text-muted-foreground">
-                PDF, DOCX, PPTX — upload any format. We extract your content intelligently.
-              </p>
-            </div>
-
-            {/* AI Voiceover */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <Mic className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold">AI Voiceover & Voice Cloning</h3>
-              <p className="text-sm text-muted-foreground">
-                40+ professional voices or clone your own. Upload 2 minutes of audio and we'll match
-                it.
-              </p>
-            </div>
-
-            {/* SCORM Export */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
                 <Download className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">SCORM 1.2 & 2004 Export</h3>
+              <h3 className="mb-1.5 text-lg font-semibold">Export</h3>
+              <p className="text-sm text-muted-foreground">MP4, SCORM, or Coursera-ready.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid Section — short copy + reels/short-form/VFX */}
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-2 text-center text-2xl font-bold md:text-3xl">
+            From reels to cinematic — one platform
+          </h2>
+          <p className="mb-8 text-center text-sm text-muted-foreground">
+            Course videos, vertical reels, short-form, and high-VFX cinematic. More than slides and
+            export.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <Presentation className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="mb-1 font-semibold">Reels & short-form</h3>
               <p className="text-sm text-muted-foreground">
-                Export LMS-ready packages for any platform. Udemy MP4, Coursera chapters, or SCORM
-                for corporate LMS.
+                Vertical reels and quick explainers from a prompt or doc.
               </p>
             </div>
-
-            {/* Quiz Generation */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <BookOpen className="h-6 w-6 text-primary" />
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">Auto-Generated Quizzes</h3>
+              <h3 className="mb-1 font-semibold">High-VFX & cinematic</h3>
               <p className="text-sm text-muted-foreground">
-                AI creates assessment questions from your content. Multiple choice, true/false, and
-                short answer.
+                Cinematic and VFX-style content — beyond generic AI output.
               </p>
             </div>
-
-            {/* English voiceover */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <Volume2 className="h-6 w-6 text-primary" />
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">Professional English Voiceover</h3>
+              <h3 className="mb-1 font-semibold">Document upload</h3>
               <p className="text-sm text-muted-foreground">
-                Natural-sounding narration in English. We focus on quality first — more languages
-                coming soon.
+                PDF, DOCX, PPTX — we extract and structure.
               </p>
             </div>
-
-            {/* Bloom's Taxonomy */}
-            <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
-                <GraduationCap className="h-6 w-6 text-primary" />
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <Mic className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">Learning Objective Mapping</h3>
+              <h3 className="mb-1 font-semibold">AI voiceover</h3>
+              <p className="text-sm text-muted-foreground">40+ voices or clone your own.</p>
+            </div>
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <Download className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="mb-1 font-semibold">SCORM export</h3>
               <p className="text-sm text-muted-foreground">
-                Bloom's Taxonomy alignment for professional certification courses. EC-Council and
-                CompTIA ready.
+                LMS-ready for Udemy, Coursera, corporate.
+              </p>
+            </div>
+            <div className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                <GraduationCap className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="mb-1 font-semibold">Learning objectives</h3>
+              <p className="text-sm text-muted-foreground">
+                Bloom's Taxonomy, EC-Council & CompTIA ready.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Comparison Section */}
-      <section className="px-6 py-20">
+      {/* Comparison — short */}
+      <section className="px-6 py-14">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-              Why Videaa vs. recording yourself?
-            </h2>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Traditional */}
-            <div className="rounded-2xl border border-border bg-card p-8">
-              <h3 className="mb-6 text-lg font-semibold text-muted-foreground">
-                Recording Yourself
+          <h2 className="mb-8 text-center text-2xl font-bold md:text-3xl">Why Videaa?</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+                Recording yourself
               </h3>
-              <ul className="space-y-4 text-sm text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 text-destructive">✗</span>
-                  <span>Hours of recording, editing, and re-takes</span>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex gap-2">
+                  <span className="text-destructive">✗</span> Hours of re-takes
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 text-destructive">✗</span>
-                  <span>Expensive equipment and software needed</span>
+                <li className="flex gap-2">
+                  <span className="text-destructive">✗</span> Costly gear & software
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 text-destructive">✗</span>
-                  <span>Can't easily update when content changes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 text-destructive">✗</span>
-                  <span>Manual recording in one language only</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 text-destructive">✗</span>
-                  <span>$50K-$200K per course for professional production</span>
+                <li className="flex gap-2">
+                  <span className="text-destructive">✗</span> Hard to update
                 </li>
               </ul>
             </div>
-
-            {/* Videaa */}
-            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-8">
-              <h3 className="mb-6 text-lg font-semibold text-primary">With Videaa</h3>
-              <ul className="space-y-4 text-sm">
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>Upload once, video generated in minutes</span>
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+              <h3 className="mb-3 text-sm font-semibold text-primary">With Videaa</h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> Course videos, reels,
+                  short-form, cinematic
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>No equipment needed — just your documents</span>
+                <li className="flex gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> Upload or prompt →
+                  video in minutes
                 </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>Update content anytime, regenerate instantly</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>Professional English narration — no recording needed</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>Starting at $39/month — unlimited updates</span>
+                <li className="flex gap-2">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> No equipment · update &
+                  regenerate anytime
                 </li>
               </ul>
             </div>
@@ -788,12 +778,12 @@ const LandingPage = () => {
 
         <div className="relative z-10 mx-auto max-w-2xl">
           <div className="rounded-2xl border border-primary/20 bg-card/80 p-8 shadow-2xl backdrop-blur-xl">
-            <h2 className="mb-3 text-center text-3xl font-bold">
-              Start Creating Course Videos Today
-            </h2>
-            <p className="mb-8 text-center text-muted-foreground">
-              Join 2,000+ course creators already using Videaa. Get early access and 50% off launch
-              pricing.
+            <h2 className="mb-2 text-center text-2xl font-bold">Get early access</h2>
+            <p className="mb-6 text-center text-sm text-muted-foreground">
+              {waitlistCount != null && waitlistCount >= 100
+                ? `${waitlistCount.toLocaleString()} on the list · `
+                : ""}
+              100 credits free when you sign up
             </p>
 
             <form onSubmit={handleInterestSubmit} className="space-y-5">
@@ -978,18 +968,22 @@ const LandingPage = () => {
         </div>
       </footer>
 
-      {/* Beta Login Modal */}
+      {/* Beta Login Modal — high contrast in light/dark */}
       <Dialog open={showBetaLogin} onOpenChange={setShowBetaLogin}>
-        <DialogContent className="border-border bg-card sm:max-w-md">
+        <DialogContent className="border-border bg-background text-foreground sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl">Beta Tester Login</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-semibold text-foreground">
+              Beta Tester Login
+            </DialogTitle>
+            <DialogDescription className="text-foreground/85">
               Sign in with your beta tester credentials to access Videaa.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBetaLogin} className="mt-4 space-y-4">
             <div>
-              <Label htmlFor="beta-email">Email</Label>
+              <Label htmlFor="beta-email" className="text-foreground">
+                Email
+              </Label>
               <Input
                 id="beta-email"
                 data-testid="beta-email-input"
@@ -1002,7 +996,9 @@ const LandingPage = () => {
               />
             </div>
             <div>
-              <Label htmlFor="beta-password">Password</Label>
+              <Label htmlFor="beta-password" className="text-foreground">
+                Password
+              </Label>
               <Input
                 id="beta-password"
                 data-testid="beta-password-input"
@@ -1039,20 +1035,25 @@ const LandingPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Interest Form Modal */}
+      {/* Interest Form Modal — high contrast in light/dark */}
       <Dialog open={showInterestForm} onOpenChange={setShowInterestForm}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto border-border bg-card sm:max-w-lg">
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-border bg-background text-foreground sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl">Get Early Access to Videaa</DialogTitle>
-            <DialogDescription>
-              Join 2,000+ course creators. Turn your lecture notes into professional videos.
+            <DialogTitle className="text-xl font-semibold text-foreground">
+              Get Early Access to Videaa
+            </DialogTitle>
+            <DialogDescription className="text-foreground/85">
+              {waitlistCount != null && waitlistCount >= 100
+                ? `${waitlistCount.toLocaleString()} on the list · `
+                : ""}
+              100 credits free when you sign up
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleInterestSubmit} className="mt-4 space-y-4">
             {/* Name & Email */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="modal-name">
+                <Label htmlFor="modal-name" className="text-foreground">
                   Full Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -1067,7 +1068,7 @@ const LandingPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="modal-email">
+                <Label htmlFor="modal-email" className="text-foreground">
                   Email <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -1086,7 +1087,7 @@ const LandingPage = () => {
             {/* Role & Courses Created (Required) */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label>
+                <Label className="text-foreground">
                   I am a... <span className="text-destructive">*</span>
                 </Label>
                 <Select value={role} onValueChange={setRole} required>
@@ -1106,7 +1107,7 @@ const LandingPage = () => {
                 </Select>
               </div>
               <div>
-                <Label>
+                <Label className="text-foreground">
                   Courses created <span className="text-destructive">*</span>
                 </Label>
                 <Select value={earlyAccessPriority} onValueChange={setEarlyAccessPriority} required>
@@ -1124,7 +1125,7 @@ const LandingPage = () => {
 
             {/* Topics (Optional chips) */}
             <div>
-              <Label className="text-sm">
+              <Label className="text-sm text-foreground">
                 What do you teach? <span className="text-xs text-muted-foreground">(optional)</span>
               </Label>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -1155,7 +1156,7 @@ const LandingPage = () => {
             {/* Challenges & Export Format (Optional) */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label className="text-sm">
+                <Label className="text-sm text-foreground">
                   Challenge <span className="text-xs text-muted-foreground">(optional)</span>
                 </Label>
                 <Select value={useCase} onValueChange={setUseCase}>
@@ -1173,7 +1174,7 @@ const LandingPage = () => {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm">
+                <Label className="text-sm text-foreground">
                   Export format <span className="text-xs text-muted-foreground">(optional)</span>
                 </Label>
                 <Select value={aiExperience} onValueChange={setAiExperience}>
