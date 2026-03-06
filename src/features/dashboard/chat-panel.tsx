@@ -19,9 +19,18 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ChatMessage, TypingIndicator, type ChatMessageData } from "./chat-message";
 import { ChatScreenplayCard } from "./chat-screenplay-card";
-import type { Screenplay, VideoFormat } from "@/api/video-generation-service";
+import type { Screenplay, VideoFormat, ProjectChatMessage } from "@/api/video-generation-service";
 import { videoGenerationService } from "@/api/video-generation-service";
 import { cn } from "@/lib/utils";
+
+function toProjectChatMessages(messages: ChatMessageData[]): ProjectChatMessage[] {
+  return messages.map((m) => ({
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+  }));
+}
 
 interface ChatPanelProps {
   screenplay: Screenplay | null;
@@ -73,12 +82,58 @@ export function ChatPanel({
   const videoRef = useRef<HTMLVideoElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const skipNextSaveRef = useRef(false);
 
   const isLoading = isRefining || isGenerating;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Load persisted chat when opening a project
+  useEffect(() => {
+    if (!projectId) {
+      setMessages([]);
+      return;
+    }
+    let cancelled = false;
+    videoGenerationService
+      .getProjectChat(projectId)
+      .then((loaded) => {
+        if (cancelled) {
+          return;
+        }
+        const next =
+          Array.isArray(loaded) && loaded.length > 0
+            ? (loaded.map((m) => ({
+                ...m,
+                timestamp: new Date(m.timestamp),
+              })) as ChatMessageData[])
+            : [];
+        setMessages(next);
+        if (next.length > 0) {
+          skipNextSaveRef.current = true;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  // Persist chat when messages change (skip once after load)
+  useEffect(() => {
+    if (!projectId || messages.length === 0) {
+      return;
+    }
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+    videoGenerationService
+      .saveProjectChatMessages(projectId, toProjectChatMessages(messages))
+      .catch(() => {});
+  }, [projectId, messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -377,8 +432,8 @@ export function ChatPanel({
         </div>
       )}
 
-      {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto pr-2">
+      {/* Chat Messages Area - scrollable so conversation is always visible */}
+      <div className="min-h-0 flex-1 overflow-y-auto pr-2">
         {/* Welcome message when no screenplay and no messages */}
         {!screenplay && messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">

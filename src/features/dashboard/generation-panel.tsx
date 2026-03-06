@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Wand2,
   Loader2,
@@ -10,12 +10,14 @@ import {
   Presentation,
   Grid3X3,
   Download,
+  Paperclip,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ModelSelector, VideoModelSelector } from "@/components/ui/model-selector";
 import { ContentTypeSelector } from "@/components/ui/content-type-selector";
-import { FileUploadZone, type UploadedFile } from "@/components/ui/file-upload-zone";
+import type { UploadedFile } from "@/components/ui/file-upload-zone";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -108,6 +110,7 @@ export function GenerationPanel({
   const [slideshowView, setSlideshowView] = useState<"carousel" | "grid">("carousel");
   const [contentAiModel, setContentAiModel] = useState<ContentAiModel>("openai");
   const [isExportingSlideshow, setIsExportingSlideshow] = useState<"pptx" | "pdf" | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatMap: Record<string, VideoFormat> = {
     reel: "reel",
@@ -323,6 +326,35 @@ export function GenerationPanel({
 
   const canGenerate = topic.trim().length > 0;
 
+  const addFiles = (newFiles: File[]) => {
+    const uploadedFiles: UploadedFile[] = newFiles.map((file) => ({
+      id: Math.random().toString(36).slice(2, 11),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file,
+    }));
+    handleFilesChange([...files, ...uploadedFiles]);
+  };
+
+  const [isDropOver, setIsDropOver] = useState(false);
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(true);
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(false);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(false);
+    const dropped = e.dataTransfer?.files;
+    if (dropped?.length) {
+      addFiles(Array.from(dropped));
+    }
+  };
+
   // Quick test video generation using fal.ai (via backend)
   const handleTestVideo = async () => {
     if (!extractedContent?.text && !topic.trim()) {
@@ -511,36 +543,86 @@ Academic and informative tone suitable for online learning platforms.`;
 
   return (
     <div className="space-y-6">
-      {/* Topic Input */}
-      <section>
-        <div className="mb-4 flex items-center gap-2">
+      {/* Content: describe + attach in one box */}
+      <section
+        className={`rounded-2xl border p-4 transition-colors ${
+          isDropOver ? "border-primary bg-primary/5" : "border-border/50 bg-card/30"
+        }`}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        <div className="mb-3 flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
             1
           </span>
-          <h2 className="font-semibold">Describe Your Course Module</h2>
-        </div>
-        <Textarea
-          placeholder="What should this module cover? E.g., 'Introduction to Python variables and data types' or 'Explain the concept of object-oriented programming with examples'"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="min-h-[100px] resize-none"
-        />
-      </section>
-
-      {/* File Upload */}
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-            2
-          </span>
-          <h2 className="font-semibold">
-            Upload Course Materials{" "}
-            <span className="font-normal text-muted-foreground">(PDF, PPTX, DOCX)</span>
-          </h2>
+          <h2 className="font-semibold">Content Description</h2>
           {isUploading && <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
-        <FileUploadZone files={files} onFilesChange={handleFilesChange} />
-
+        <p className="mb-3 text-sm text-muted-foreground">
+          Describe it below and/or attach documents (PDF, PPTX, DOCX). You can paste from clipboard
+          or use the attach button.
+        </p>
+        <Textarea
+          placeholder="What should this module cover? E.g., 'Introduction to Python variables and data types'"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          onPaste={(e) => {
+            const pasted = e.clipboardData?.files;
+            if (pasted?.length) {
+              e.preventDefault();
+              addFiles(Array.from(pasted));
+            }
+          }}
+          className="min-h-[288px] resize-none"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.md"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                addFiles(Array.from(e.target.files));
+              }
+              e.target.value = "";
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4" />
+            Attach files
+          </Button>
+          <span className="text-xs text-muted-foreground">or drop files in this box</span>
+        </div>
+        {files.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {files.map((file) => (
+              <span
+                key={file.id}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-xs"
+              >
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="max-w-[120px] truncate">{file.name}</span>
+                <button
+                  type="button"
+                  className="rounded p-0.5 hover:bg-destructive/20 hover:text-destructive"
+                  onClick={() => handleFilesChange(files.filter((f) => f.id !== file.id))}
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         {/* Extracted Content Preview */}
         {extractedContent && extractedContent.text && (
           <div className="mt-4 rounded-xl border border-border/50 bg-card/50 p-4">
@@ -560,113 +642,113 @@ Academic and informative tone suitable for online learning platforms.`;
             </div>
           </div>
         )}
-
-        {/* Slideshow Preview - Full Width */}
-        {slideshowSlides && slideshowSlides.length > 0 && (
-          <div className="-mx-4 mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 md:-mx-6 md:p-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Presentation className="h-5 w-5 text-primary" />
-                <span className="text-base font-semibold text-primary">
-                  Slideshow Generated ({slideshowSlides.length} slides)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* View Toggle */}
-                <div className="flex items-center gap-1 rounded-lg bg-secondary p-1">
-                  <button
-                    onClick={() => setSlideshowView("carousel")}
-                    className={`rounded px-2 py-1.5 text-xs transition-colors ${
-                      slideshowView === "carousel"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Carousel view"
-                  >
-                    <Play className="mr-1 inline h-3 w-3" />
-                    Present
-                  </button>
-                  <button
-                    onClick={() => setSlideshowView("grid")}
-                    className={`rounded px-2 py-1.5 text-xs transition-colors ${
-                      slideshowView === "grid"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Grid view"
-                  >
-                    <Grid3X3 className="mr-1 inline h-3 w-3" />
-                    Grid
-                  </button>
-                </div>
-                {/* Download as PPT / PDF */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => handleExportSlideshow("pptx")}
-                  disabled={!!isExportingSlideshow}
-                >
-                  {isExportingSlideshow === "pptx" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="h-3.5 w-3.5" />
-                  )}
-                  Download as PPT
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => handleExportSlideshow("pdf")}
-                  disabled={!!isExportingSlideshow}
-                >
-                  {isExportingSlideshow === "pdf" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="h-3.5 w-3.5" />
-                  )}
-                  Download as PDF
-                </Button>
-              </div>
-            </div>
-
-            {slideshowView === "carousel" ? (
-              <SlideshowPreview
-                slides={slideshowSlides}
-                autoPlay={false}
-                onDownload={handleDownloadSlideshow}
-              />
-            ) : (
-              <SlideshowGrid
-                slides={slideshowSlides}
-                onSlideClick={() => {
-                  setSlideshowView("carousel");
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Test Video Preview */}
-        {testVideoUrl && (
-          <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Video className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium text-accent">AI Video Generated!</span>
-            </div>
-            <video
-              src={testVideoUrl}
-              controls
-              className="w-full rounded-lg"
-              style={{ maxHeight: "300px" }}
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              This is a quick 5-second AI-generated preview.
-            </p>
-          </div>
-        )}
       </section>
+
+      {/* Slideshow Preview - Full Width */}
+      {slideshowSlides && slideshowSlides.length > 0 && (
+        <div className="-mx-4 rounded-xl border border-primary/30 bg-primary/5 p-4 md:-mx-6 md:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Presentation className="h-5 w-5 text-primary" />
+              <span className="text-base font-semibold text-primary">
+                Slideshow Generated ({slideshowSlides.length} slides)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 rounded-lg bg-secondary p-1">
+                <button
+                  onClick={() => setSlideshowView("carousel")}
+                  className={`rounded px-2 py-1.5 text-xs transition-colors ${
+                    slideshowView === "carousel"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title="Carousel view"
+                >
+                  <Play className="mr-1 inline h-3 w-3" />
+                  Present
+                </button>
+                <button
+                  onClick={() => setSlideshowView("grid")}
+                  className={`rounded px-2 py-1.5 text-xs transition-colors ${
+                    slideshowView === "grid"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title="Grid view"
+                >
+                  <Grid3X3 className="mr-1 inline h-3 w-3" />
+                  Grid
+                </button>
+              </div>
+              {/* Download as PPT / PDF */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => handleExportSlideshow("pptx")}
+                disabled={!!isExportingSlideshow}
+              >
+                {isExportingSlideshow === "pptx" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Download as PPT
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => handleExportSlideshow("pdf")}
+                disabled={!!isExportingSlideshow}
+              >
+                {isExportingSlideshow === "pdf" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Download as PDF
+              </Button>
+            </div>
+          </div>
+
+          {slideshowView === "carousel" ? (
+            <SlideshowPreview
+              slides={slideshowSlides}
+              autoPlay={false}
+              onDownload={handleDownloadSlideshow}
+            />
+          ) : (
+            <SlideshowGrid
+              slides={slideshowSlides}
+              onSlideClick={() => {
+                setSlideshowView("carousel");
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Test Video Preview */}
+      {testVideoUrl && (
+        <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Video className="h-4 w-4 text-accent" />
+            <span className="text-sm font-medium text-accent">AI Video Generated!</span>
+          </div>
+          <video
+            src={testVideoUrl}
+            controls
+            className="w-full rounded-lg"
+            style={{ maxHeight: "300px" }}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            This is a quick 5-second AI-generated preview.
+          </p>
+        </div>
+      )}
 
       {/* Selected Background Video */}
       {selectedVideo && (
@@ -697,7 +779,7 @@ Academic and informative tone suitable for online learning platforms.`;
       <section>
         <div className="mb-4 flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-            3
+            2
           </span>
           <h2 className="font-semibold">Choose Format</h2>
         </div>
@@ -711,7 +793,7 @@ Academic and informative tone suitable for online learning platforms.`;
       <section>
         <div className="mb-4 flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-            4
+            3
           </span>
           <h2 className="font-semibold">
             {contentType === "presentation" ? "AI & Style Settings" : "AI Models"}

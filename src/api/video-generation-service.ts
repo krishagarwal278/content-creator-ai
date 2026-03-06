@@ -391,6 +391,68 @@ export async function getAllScreenplays(userId?: string): Promise<StoredScreenpl
 }
 
 // =============================================================================
+// Project Chat API (persist chat per project; backend must implement GET/POST)
+// =============================================================================
+
+export interface ProjectChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string; // ISO 8601
+}
+
+export interface ProjectChatResponse {
+  messages: ProjectChatMessage[];
+}
+
+export async function getProjectChat(projectId: string): Promise<ProjectChatMessage[]> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/project/${projectId}/chat`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      const error = await response.json().catch(() => ({ message: "Failed to fetch chat" }));
+      throw new Error(error.message || "Failed to fetch chat");
+    }
+    const data = await response.json();
+    const list = data.messages ?? data.data?.messages ?? [];
+    return Array.isArray(list) ? list : [];
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function saveProjectChatMessages(
+  projectId: string,
+  messages: ProjectChatMessage[],
+): Promise<void> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/v1/project/${projectId}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to save chat" }));
+      throw new Error(error.message || "Failed to save chat");
+    }
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
+// =============================================================================
 // Generation History API
 // =============================================================================
 
@@ -618,6 +680,8 @@ export const videoGenerationService = {
   getVideoStatus,
   getProjectScreenplays,
   getAllScreenplays,
+  getProjectChat,
+  saveProjectChatMessages,
   getGenerationHistory,
   getVideoHistory,
   getRecentGenerations,
