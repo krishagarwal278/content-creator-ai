@@ -34,9 +34,15 @@ vi.mock("@/api/client", () => ({
   },
 }));
 
-// Mock interest service
+// Mock interest service (LandingPage uses submitInterestForm and getInterestStats)
 vi.mock("@/api/interest-service", () => ({
   submitInterestForm: vi.fn(),
+  getInterestStats: vi.fn().mockResolvedValue({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    betaUsers: 0,
+  }),
 }));
 
 // Mock sonner toast
@@ -98,14 +104,16 @@ describe("LandingPage", () => {
     it("should display main headline", () => {
       renderLandingPage();
 
-      expect(screen.getByText(/Turn your course notes into/)).toBeInTheDocument();
-      expect(screen.getByText("engaging videos")).toBeInTheDocument();
+      expect(screen.getByText(/One platform\./)).toBeInTheDocument();
+      expect(screen.getByText(/Every format\./)).toBeInTheDocument();
     });
 
     it("should display subheadline", () => {
       renderLandingPage();
 
-      expect(screen.getByText(/Upload your lecture notes, slides, or PDFs/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Course videos, reels, short-form, and cinematic content/),
+      ).toBeInTheDocument();
     });
 
     it("should display Start Creating button", () => {
@@ -123,7 +131,7 @@ describe("LandingPage", () => {
     it("should display beta badge for course creators", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Built for Udemy & Coursera Instructors")).toBeInTheDocument();
+      expect(screen.getByText("Instructors, Creators, & Learners")).toBeInTheDocument();
     });
   });
 
@@ -140,7 +148,7 @@ describe("LandingPage", () => {
       expect(screen.getByRole("button", { name: /Generate 4-Slide Preview/i })).toBeInTheDocument();
     });
 
-    it("should scroll to live demo section when See How It Works is clicked", async () => {
+    it("should scroll to live demo section when See demo is clicked", async () => {
       const user = userEvent.setup();
       const scrollIntoViewSpy = vi
         .spyOn(Element.prototype, "scrollIntoView")
@@ -148,8 +156,8 @@ describe("LandingPage", () => {
 
       renderLandingPage();
 
-      const seeHowItWorksBtn = screen.getByRole("button", { name: /See How It Works/i });
-      await user.click(seeHowItWorksBtn);
+      const seeDemoBtn = screen.getByRole("button", { name: /See demo/i });
+      await user.click(seeDemoBtn);
 
       await waitFor(() => {
         expect(scrollIntoViewSpy).toHaveBeenCalledWith({
@@ -161,11 +169,11 @@ describe("LandingPage", () => {
       scrollIntoViewSpy.mockRestore();
     });
 
-    it("should have See How It Works button that targets the demo section", () => {
+    it("should have See demo button that targets the demo section", () => {
       renderLandingPage();
 
       const btn = screen.getByTestId("watch-demo-btn");
-      expect(btn).toHaveTextContent("See How It Works");
+      expect(btn).toHaveTextContent("See demo");
     });
   });
 
@@ -173,22 +181,22 @@ describe("LandingPage", () => {
     it("should display Document Upload feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Document Upload")).toBeInTheDocument();
-      expect(screen.getByText(/PDF, DOCX, PPTX — upload any format/)).toBeInTheDocument();
+      expect(screen.getByText("Document upload")).toBeInTheDocument();
+      expect(screen.getByText(/PDF, DOCX, PPTX — we extract and structure/)).toBeInTheDocument();
     });
 
     it("should display AI Voiceover feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("AI Voiceover & Voice Cloning")).toBeInTheDocument();
-      expect(screen.getByText(/40\+ professional voices or clone your own/)).toBeInTheDocument();
+      expect(screen.getByText("AI voiceover")).toBeInTheDocument();
+      expect(screen.getByText(/40\+ voices or clone your own/)).toBeInTheDocument();
     });
 
     it("should display SCORM Export feature", () => {
       renderLandingPage();
 
-      expect(screen.getByText("SCORM 1.2 & 2004 Export")).toBeInTheDocument();
-      expect(screen.getByText(/Export LMS-ready packages/)).toBeInTheDocument();
+      expect(screen.getByText("SCORM export")).toBeInTheDocument();
+      expect(screen.getByText(/LMS-ready for Udemy, Coursera, corporate/)).toBeInTheDocument();
     });
   });
 
@@ -435,7 +443,7 @@ describe("LandingPage", () => {
     it("should have inline interest form in the page", () => {
       renderLandingPage();
 
-      expect(screen.getByText("Start Creating Course Videos Today")).toBeInTheDocument();
+      expect(screen.getByText("Get early access")).toBeInTheDocument();
       expect(screen.getByTestId("interest-name-input")).toBeInTheDocument();
       expect(screen.getByTestId("interest-email-input")).toBeInTheDocument();
     });
