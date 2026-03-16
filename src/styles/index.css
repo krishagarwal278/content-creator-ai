@@ -8,7 +8,7 @@
   /* ============================================================================
    * LIGHT THEME - Evolved to complement Videaa's dark charcoal logo
    * Cool slate tones create cohesion with logo, teal accent for energy
-   * Inspired by Linear, Vercel, Raycast - modern, professional, tech-forward
+   * Inspired by Linear, Raycast - modern, professional, tech-forward
    * ============================================================================ */
   :root {
     /* Cool slate background - matches logo's charcoal undertones
@@ -163,7 +163,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   html {
@@ -175,7 +175,11 @@
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: "Inter", system-ui, sans-serif;
     transition:
       background-color 0.3s ease,
@@ -191,7 +195,8 @@
 @layer utilities {
   /* Glass morphism effects - adapts to light/dark */
   .glass {
-    @apply border border-border/50 backdrop-blur-xl;
+    border-color: hsl(var(--border) / 0.5);
+    backdrop-filter: blur(12px);
     background: hsl(var(--card) / 0.6);
   }
 
@@ -207,7 +212,8 @@
   }
 
   .glass-strong {
-    @apply border border-border/60 backdrop-blur-2xl;
+    border-color: hsl(var(--border) / 0.6);
+    backdrop-filter: blur(24px);
     background: hsl(var(--card) / 0.8);
   }
 
@@ -224,7 +230,8 @@
 
   /* Gradient text */
   .gradient-text {
-    @apply bg-clip-text text-transparent;
+    background-clip: text;
+    color: transparent;
     background-image: var(--gradient-primary);
   }
 
@@ -244,13 +251,16 @@
       linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     mask-composite: exclude;
     pointer-events: none;
   }
 
   /* Subtle surface for cards in light mode */
   .surface-elevated {
-    @apply bg-card;
+    background-color: hsl(var(--card));
     box-shadow: var(--shadow-card);
   }
 

@@ -39,6 +39,16 @@ npm run test:e2e:open    # Cypress UI
 npm run test:all         # Unit + E2E
 ```
 
+## Environment variables
+
+Key variables (see [.env.example](.env.example) for the full list):
+
+- **`VITE_BACKEND_URL`** — Backend API base URL (e.g. `http://localhost:4000` locally; Railway URL in production). Must not be localhost in production.
+- **`VITE_SUPABASE_URL`** — Supabase project URL.
+- **`VITE_SUPABASE_PUBLISHABLE_KEY`** — Supabase anon (publishable) key.
+
+Never commit `.env`; never put secret keys in `VITE_*` (they are bundled into the frontend).
+
 ## Global practices
 
 ### Commit strategy
