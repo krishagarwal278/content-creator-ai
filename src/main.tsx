@@ -1,4 +1,5 @@
 // import "@/config/polyfills";
+import "@/config/env";
 import { createRoot } from "react-dom/client";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import App from "./App";

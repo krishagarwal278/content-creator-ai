@@ -62,7 +62,7 @@ VITE_BACKEND_URL=http://localhost:4000
 ```
 
 - **Local:** `VITE_BACKEND_URL` should be your local backend (e.g. `http://localhost:4000`).
-- **Production (e.g. Vercel):** Set `VITE_BACKEND_URL` in the project’s environment to your Railway backend URL (e.g. `https://YOUR-APP.up.railway.app`, no trailing slash). Otherwise the app will try to call localhost in the user’s browser and fail.
+- **Production:** Set `VITE_BACKEND_URL` in your deployment host (e.g. Railway) to your backend API URL (e.g. `https://YOUR-BACKEND.up.railway.app`, no trailing slash). Otherwise the app will try to call localhost in the user’s browser and fail.
 
 The backend (Express, video/voice/slideshow APIs) is in a separate repo: [github.com/krishagarwal278/supabase](https://github.com/krishagarwal278/supabase). Point `VITE_BACKEND_URL` at that service.
 
