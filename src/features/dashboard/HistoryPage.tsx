@@ -16,6 +16,7 @@ import {
   Coins,
   TrendingUp,
   Play,
+  Presentation,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -30,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/common/contexts/AuthContext";
 import {
   videoGenerationService,
@@ -38,6 +40,7 @@ import {
   type VideoFormat,
   type GenerationType,
   type GenerationStatus,
+  type StoredScreenplay,
 } from "@/api/video-generation-service";
 
 const formatLabels: Record<VideoFormat, string> = {
@@ -320,6 +323,35 @@ function LoadingState() {
   );
 }
 
+function SlideCard({ item, onClick }: { item: StoredScreenplay; onClick: () => void }) {
+  const date = new Date(item.createdAt);
+
+  return (
+    <div
+      onClick={onClick}
+      className="glass group cursor-pointer rounded-xl border border-border/50 p-4 transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-20 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
+          <Presentation className="h-8 w-8 text-primary/40" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 truncate font-semibold group-hover:text-primary">
+            {item.screenplay?.title || "Untitled screenplay"}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {item.screenplay?.scenes?.length ?? 0} scenes · {item.screenplay?.format ?? "—"}
+          </p>
+          <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            {format(date, "MMM d, yyyy")}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -349,6 +381,9 @@ const History = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
+  const [screenplays, setScreenplays] = useState<StoredScreenplay[]>([]);
+  const [screenplaysLoading, setScreenplaysLoading] = useState(false);
+  const [selectedScreenplay, setSelectedScreenplay] = useState<StoredScreenplay | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!user?.id) {
@@ -384,6 +419,27 @@ const History = () => {
     fetchHistory();
   }, [fetchHistory]);
 
+  const fetchScreenplays = useCallback(async () => {
+    if (!user?.id) {
+      return;
+    }
+    setScreenplaysLoading(true);
+    try {
+      const list = await videoGenerationService.getAllScreenplays(user.id);
+      setScreenplays(list);
+    } catch {
+      setScreenplays([]);
+    } finally {
+      setScreenplaysLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (activeTab === "slides" && user?.id) {
+      fetchScreenplays();
+    }
+  }, [activeTab, user?.id, fetchScreenplays]);
+
   const filteredHistory = useMemo(() => {
     if (!searchQuery) {
       return history;
@@ -403,11 +459,7 @@ const History = () => {
   }, [videos, searchQuery]);
 
   const handleItemClick = (item: GenerationHistoryEntry) => {
-    if (item.project_id) {
-      navigate(`/project/${item.project_id}`);
-    } else if (item.video_url) {
-      window.open(item.video_url, "_blank");
-    }
+    navigate(`/history/view/${item.id}`);
   };
 
   return (
@@ -455,6 +507,10 @@ const History = () => {
               <TabsTrigger value="videos" className="gap-2">
                 <Video className="h-4 w-4" />
                 Videos
+              </TabsTrigger>
+              <TabsTrigger value="slides" className="gap-2">
+                <Presentation className="h-4 w-4" />
+                Slides
               </TabsTrigger>
             </TabsList>
 
@@ -556,6 +612,39 @@ const History = () => {
             </div>
           </TabsContent>
 
+          {/* Slides Tab */}
+          <TabsContent value="slides">
+            <div
+              className="glass-strong rounded-2xl border border-border/50 p-6"
+              style={{ animationDelay: "0.2s" }}
+            >
+              {screenplaysLoading ? (
+                <LoadingState />
+              ) : screenplays.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Presentation className="mb-4 h-8 w-8 text-muted-foreground/60" />
+                  <h3 className="mb-2 text-lg font-semibold">No saved slides yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your saved screenplays and slides will appear here.
+                  </p>
+                  <Button onClick={() => navigate("/dashboard")} className="mt-4">
+                    Create content
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {screenplays.map((item) => (
+                    <SlideCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => setSelectedScreenplay(item)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           {/* Videos Tab */}
           <TabsContent value="videos">
             <div
@@ -588,6 +677,33 @@ const History = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Screenplay detail modal */}
+        <Dialog open={!!selectedScreenplay} onOpenChange={() => setSelectedScreenplay(null)}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{selectedScreenplay?.screenplay?.title || "Screenplay"}</DialogTitle>
+            </DialogHeader>
+            {selectedScreenplay?.screenplay && (
+              <div className="space-y-4 text-sm">
+                <p className="text-muted-foreground">
+                  {selectedScreenplay.screenplay.scenes?.length ?? 0} scenes ·{" "}
+                  {selectedScreenplay.screenplay.format} ·{" "}
+                  {selectedScreenplay.screenplay.totalDuration}s
+                </p>
+                <ul className="space-y-3">
+                  {selectedScreenplay.screenplay.scenes?.map((scene, i) => (
+                    <li key={i} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                      <span className="font-medium">Scene {scene.sceneNumber}</span>
+                      <p className="mt-1 text-muted-foreground">{scene.visualDescription}</p>
+                      {scene.narration && <p className="mt-1 italic">{scene.narration}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

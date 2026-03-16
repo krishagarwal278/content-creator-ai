@@ -29,18 +29,24 @@ interface NavItem {
   path: string;
 }
 
-const navItems: NavItem[] = [
-  { icon: Home, label: "Dashboard", path: "/dashboard" },
-  { icon: FolderOpen, label: "Projects", path: "/projects" },
-  { icon: History, label: "History", path: "/history" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-];
+const NAV_DASHBOARD = "/dashboard";
+const NAV_PROJECTS = "/projects";
+const NAV_HISTORY = "/history";
+const NAV_SETTINGS = "/settings";
 
 export function Sidebar() {
-  const { createNewProject } = useProjectContext();
+  const { createNewProject, lastProjectId } = useProjectContext();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const dashboardPath = lastProjectId ? `/project/${lastProjectId}` : NAV_DASHBOARD;
+  const navItems: NavItem[] = [
+    { icon: Home, label: "Dashboard", path: dashboardPath },
+    { icon: FolderOpen, label: "Projects", path: NAV_PROJECTS },
+    { icon: History, label: "History", path: NAV_HISTORY },
+    { icon: Settings, label: "Settings", path: NAV_SETTINGS },
+  ];
 
   const [planDisplay, setPlanDisplay] = useState("Free Plan");
 
@@ -62,7 +68,7 @@ export function Sidebar() {
 
   const handleNewProject = () => {
     createNewProject();
-    navigate("/");
+    navigate("/dashboard");
   };
 
   const handleUserSectionClick = () => {

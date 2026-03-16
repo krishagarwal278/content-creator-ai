@@ -7,11 +7,12 @@ import {
   enhanceScreenplay,
   generateActualVideo,
   getVideoStatus,
+  getHistoryEntry,
   type VideoGenerationRequest,
   type EnhanceScreenplayRequest,
   type GenerateActualVideoRequest,
 } from "../video-generation-service";
-import { mockScreenplay } from "@/test/test-utils";
+import { mockScreenplay } from "../../test/test-utils";
 
 const BACKEND_URL = "http://localhost:4000";
 
@@ -243,6 +244,89 @@ describe("video-generation-service", () => {
 
       expect(result.status).toBe("failed");
       expect(result.error).toBe("Rendering failed");
+    });
+  });
+
+  describe("getHistoryEntry", () => {
+    it("should call history entry endpoint with entry id", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              entry: {
+                id: "entry-1",
+                user_id: "user-1",
+                project_id: "proj-1",
+                project_name: "Test",
+                generation_type: "video",
+                status: "completed",
+                video_url: "https://example.com/video.mp4",
+              },
+            },
+          }),
+      });
+
+      await getHistoryEntry("entry-1");
+
+      expect(mockFetch).toHaveBeenCalledWith(`${BACKEND_URL}/api/v1/history/entry-1`);
+    });
+
+    it("should return entry when response has data.data.entry", async () => {
+      const entry = {
+        id: "entry-1",
+        user_id: "user-1",
+        project_id: "proj-1",
+        project_name: "Test Project",
+        generation_type: "video",
+        status: "completed",
+        credits_used: 10,
+        format: "reel",
+        duration: 30,
+        thumbnail_url: "https://example.com/thumb.jpg",
+        video_url: "https://example.com/video.mp4",
+        error_message: null,
+        metadata: {},
+        started_at: "2026-01-01T00:00:00Z",
+        completed_at: "2026-01-01T00:01:00Z",
+        created_at: "2026-01-01T00:00:00Z",
+      };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ data: { entry } }),
+      });
+
+      const result = await getHistoryEntry("entry-1");
+
+      expect(result).toEqual(entry);
+    });
+
+    it("should return null on 404", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({}),
+      });
+
+      const result = await getHistoryEntry("missing-id");
+
+      expect(result).toBeNull();
+    });
+
+    it("should throw on non-404 error response", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: "Server error" }),
+      });
+
+      await expect(getHistoryEntry("entry-1")).rejects.toThrow("Server error");
+    });
+
+    it("should throw connection error when fetch fails", async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      await expect(getHistoryEntry("entry-1")).rejects.toThrow("Cannot connect to backend");
     });
   });
 });
