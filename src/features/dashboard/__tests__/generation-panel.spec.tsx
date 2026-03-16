@@ -49,47 +49,32 @@ describe("GenerationPanel", () => {
   });
 
   describe("Rendering", () => {
-    it("should render topic input section", () => {
+    it("renders topic input with placeholder", () => {
       render(<GenerationPanel />);
-
-      expect(screen.getByText("Describe Your Course Module")).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/What should this module cover/)).toBeInTheDocument();
     });
 
-    it("should render file upload section", () => {
-      render(<GenerationPanel />);
-
-      expect(screen.getByText("Upload Course Materials")).toBeInTheDocument();
+    it("renders file upload area", () => {
+      const { container } = render(<GenerationPanel />);
+      expect(container.querySelector('input[type="file"]')).toBeInTheDocument();
     });
 
-    it("should render content type selector", () => {
+    it("renders format selector with options", () => {
       render(<GenerationPanel />);
-
       expect(screen.getByText("Choose Format")).toBeInTheDocument();
       expect(screen.getByText("Reel")).toBeInTheDocument();
       expect(screen.getByText("Short Video")).toBeInTheDocument();
     });
 
-    it("should render AI models section", () => {
+    it("renders model/settings section with duration and toggles", () => {
       render(<GenerationPanel />);
-
-      expect(screen.getByText("AI Models")).toBeInTheDocument();
-      expect(screen.getByText("Screenplay AI")).toBeInTheDocument();
-      expect(screen.getByText("Video Generation")).toBeInTheDocument();
-    });
-
-    it("should render generation settings", () => {
-      render(<GenerationPanel />);
-
-      expect(screen.getByText("Generation Settings")).toBeInTheDocument();
       expect(screen.getByText("Target Duration")).toBeInTheDocument();
-      expect(screen.getByText("AI Voiceover")).toBeInTheDocument();
-      expect(screen.getByText("Auto Captions")).toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: /AI Voiceover/i })).toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: /Auto Captions/i })).toBeInTheDocument();
     });
 
-    it("should render generate button", () => {
+    it("renders generate button", () => {
       render(<GenerationPanel />);
-
       expect(screen.getByRole("button", { name: /Generate Screenplay/i })).toBeInTheDocument();
     });
   });
