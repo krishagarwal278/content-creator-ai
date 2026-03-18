@@ -11,6 +11,10 @@ export interface SlideData {
   bulletPoints: string[];
   narration: string;
   imageUrl?: string;
+  /** One key fact/number for a prominent area on the slide (e.g. top-right). Must be from document. */
+  keyStat?: string;
+  /** Secondary heading or subline below title. Must be from document. */
+  subtitle?: string;
 }
 
 export interface SlideshowResponse {

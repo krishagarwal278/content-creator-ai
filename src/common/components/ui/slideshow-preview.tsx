@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SlideData } from "@/api/slideshow-service";
+import type { SlideData, SlideshowStyle } from "@/api/slideshow-service";
 
 interface SlideshowPreviewProps {
   slides: SlideData[];
@@ -19,6 +19,7 @@ interface SlideshowPreviewProps {
   autoPlay?: boolean;
   className?: string;
   onDownload?: () => void;
+  style?: SlideshowStyle;
 }
 
 export function SlideshowPreview({
@@ -27,12 +28,101 @@ export function SlideshowPreview({
   autoPlay = false,
   className,
   onDownload,
+  style,
 }: SlideshowPreviewProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const slide = slides[currentSlide];
+  const designStyle = style ?? "modern";
+
+  const cfg = (() => {
+    switch (designStyle) {
+      case "minimal":
+        return {
+          overlay: "bg-gradient-to-t from-black/70 via-black/25 to-black/10",
+          badgeBase: "rounded-full border border-white/15 bg-white/10 font-semibold text-white",
+          badgeText: "font-mono",
+          title: "text-white drop-shadow-sm",
+          titleSerif: "font-medium font-serif tracking-wide",
+          titleWeight: "font-semibold",
+          bulletItem: "text-white/80",
+          bulletMarker: "hidden",
+          bulletTextShadow: "drop-shadow-sm",
+          bulletListSpacing: "space-y-1.5",
+          showMarker: false,
+          dotActive: "bg-white/90",
+          dotInactive: "bg-white/20 hover:bg-white/30",
+        };
+      case "corporate":
+        return {
+          overlay: "bg-gradient-to-t from-black/78 via-black/35 to-black/15",
+          badgeBase: "rounded-full border border-white/15 bg-white/10 font-medium text-white",
+          badgeText: "font-mono tracking-tight",
+          title: "text-white drop-shadow-lg",
+          titleSerif: "font-medium font-serif tracking-wide",
+          titleWeight: "font-medium",
+          bulletItem: "text-white/90",
+          bulletMarker: "rounded-sm border border-white/20 bg-white/5",
+          bulletTextShadow: "",
+          bulletListSpacing: "space-y-1.5",
+          showMarker: true,
+          dotActive: "bg-primary",
+          dotInactive: "bg-muted-foreground/30 hover:bg-muted-foreground/50",
+        };
+      case "creative":
+        return {
+          overlay: "bg-gradient-to-t from-black/65 via-black/25 to-black/10",
+          badgeBase: "rounded-full bg-accent/80 font-medium text-white",
+          badgeText: "font-mono",
+          title: "text-white drop-shadow-lg",
+          titleSerif: "font-bold",
+          titleWeight: "font-bold",
+          bulletItem: "text-white/90",
+          bulletMarker: "rounded-full bg-accent/70",
+          bulletTextShadow: "drop-shadow",
+          bulletListSpacing: "space-y-2",
+          showMarker: true,
+          dotActive: "bg-accent",
+          dotInactive: "bg-white/20 hover:bg-white/30",
+        };
+      case "modern":
+      default:
+        return {
+          overlay: "bg-gradient-to-t from-black/80 via-black/40 to-black/20",
+          badgeBase: "rounded-full bg-primary/80 font-medium text-primary-foreground",
+          badgeText: "",
+          title: "text-white drop-shadow-lg",
+          titleSerif: "font-bold",
+          titleWeight: "font-bold",
+          bulletItem: "text-white/90",
+          bulletMarker: "rounded-full bg-primary",
+          bulletTextShadow: "drop-shadow",
+          bulletListSpacing: "space-y-2",
+          showMarker: true,
+          dotActive: "bg-primary",
+          dotInactive: "bg-muted-foreground/30 hover:bg-muted-foreground/50",
+        };
+    }
+  })();
+
+  const bulletsToShow = (() => {
+    const points = slide?.bulletPoints ?? [];
+    if (!points.length) {
+      return [];
+    }
+    if (designStyle === "minimal") {
+      return points.slice(0, 2);
+    }
+    if (designStyle === "corporate") {
+      return points.slice(0, 4);
+    }
+    return points.slice(0, 10);
+  })();
+
+  const keyStat = slide?.keyStat;
+  const subtitle = slide?.subtitle;
 
   // Auto-advance slides when playing
   useEffect(() => {
@@ -109,7 +199,26 @@ export function SlideshowPreview({
       )}
 
       {/* Overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+      <div className={cn("absolute inset-0", cfg.overlay)} />
+
+      {/* Key stat zone (top-right) – one prominent fact/number from document */}
+      {keyStat && (
+        <div
+          className={cn(
+            "absolute right-3 top-14 max-w-[45%] text-right md:right-6 md:top-16",
+            isLarge ? "md:top-20" : "",
+          )}
+        >
+          <span
+            className={cn(
+              "inline-block rounded-lg border border-white/20 bg-black/40 px-3 py-2 font-mono font-semibold text-white backdrop-blur-sm",
+              isLarge ? "text-lg md:text-xl" : "text-sm md:text-base",
+            )}
+          >
+            {keyStat}
+          </span>
+        </div>
+      )}
 
       {/* Slide Content */}
       <div
@@ -122,8 +231,10 @@ export function SlideshowPreview({
           {/* Slide Number Badge */}
           <span
             className={cn(
-              "inline-block rounded-full bg-primary/80 font-medium text-primary-foreground",
+              "inline-block",
+              cfg.badgeBase,
               isLarge ? "px-4 py-1.5 text-sm" : "px-3 py-1 text-xs",
+              cfg.badgeText,
             )}
           >
             Slide {slide.slideNumber} of {slides.length}
@@ -132,31 +243,50 @@ export function SlideshowPreview({
           {/* Title */}
           <h3
             className={cn(
-              "font-bold text-white drop-shadow-lg",
+              cfg.title,
+              cfg.titleSerif,
               isLarge ? "text-3xl md:text-4xl" : "text-xl md:text-2xl",
+              isLarge && designStyle === "minimal" ? "text-3xl md:text-3xl" : "",
             )}
           >
             {slide.title}
           </h3>
 
+          {/* Subtitle – secondary line below title */}
+          {subtitle && (
+            <p className={cn("text-white/85", isLarge ? "text-base md:text-lg" : "text-sm")}>
+              {subtitle}
+            </p>
+          )}
+
           {/* Bullet Points */}
-          {slide.bulletPoints.length > 0 && (
-            <ul className={cn("space-y-2", isLarge ? "max-w-3xl" : "")}>
-              {slide.bulletPoints.map((point, idx) => (
+          {bulletsToShow.length > 0 && (
+            <ul
+              className={cn(
+                cfg.bulletListSpacing,
+                isLarge ? "max-w-3xl" : "",
+                designStyle === "minimal" ? "max-w-2xl" : "",
+              )}
+            >
+              {bulletsToShow.map((point, idx) => (
                 <li
                   key={idx}
                   className={cn(
-                    "flex items-start gap-2 text-white/90",
+                    "flex items-start gap-2",
+                    cfg.bulletItem,
                     isLarge ? "text-base md:text-lg" : "text-sm",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full bg-primary",
-                      isLarge ? "mt-2 h-2 w-2" : "mt-1.5 h-1.5 w-1.5",
-                    )}
-                  />
-                  <span className="drop-shadow">{point}</span>
+                  {cfg.showMarker && (
+                    <span
+                      className={cn(
+                        "shrink-0",
+                        cfg.bulletMarker,
+                        isLarge ? "mt-2 h-2.5 w-2.5" : "mt-1.5 h-1.5 w-1.5",
+                      )}
+                    />
+                  )}
+                  <span className={cn(cfg.bulletTextShadow)}>{point}</span>
                 </li>
               ))}
             </ul>
@@ -261,7 +391,7 @@ export function SlideshowPreview({
                 onClick={() => goToSlide(idx)}
                 className={cn(
                   "h-2 rounded-full transition-all",
-                  idx === currentSlide ? "w-8 bg-primary" : "w-2 bg-white/30 hover:bg-white/50",
+                  idx === currentSlide ? `w-8 ${cfg.dotActive}` : `w-2 ${cfg.dotInactive}`,
                 )}
                 aria-label={`Go to slide ${idx + 1}`}
               />
@@ -295,9 +425,7 @@ export function SlideshowPreview({
                 onClick={() => goToSlide(idx)}
                 className={cn(
                   "h-1.5 rounded-full transition-all",
-                  idx === currentSlide
-                    ? "w-4 bg-primary"
-                    : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50",
+                  idx === currentSlide ? `w-4 ${cfg.dotActive}` : `w-1.5 ${cfg.dotInactive}`,
                 )}
                 aria-label={`Go to slide ${idx + 1}`}
               />
@@ -349,9 +477,40 @@ interface SlideshowGridProps {
   slides: SlideData[];
   onSlideClick?: (index: number) => void;
   className?: string;
+  style?: SlideshowStyle;
 }
 
-export function SlideshowGrid({ slides, onSlideClick, className }: SlideshowGridProps) {
+export function SlideshowGrid({ slides, onSlideClick, className, style }: SlideshowGridProps) {
+  const designStyle = style ?? "modern";
+
+  const overlayClass = (() => {
+    switch (designStyle) {
+      case "minimal":
+        return "bg-gradient-to-t from-black/70 via-black/25 to-black/10";
+      case "corporate":
+        return "bg-gradient-to-t from-black/78 via-black/35 to-black/15";
+      case "creative":
+        return "bg-gradient-to-t from-black/65 via-black/25 to-black/10";
+      case "modern":
+      default:
+        return "bg-gradient-to-t from-black/80 to-black/20";
+    }
+  })();
+
+  const badgeClass = (() => {
+    switch (designStyle) {
+      case "minimal":
+        return "text-white/90";
+      case "corporate":
+        return "text-white/90";
+      case "creative":
+        return "text-accent";
+      case "modern":
+      default:
+        return "text-primary";
+    }
+  })();
+
   return (
     <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4", className)}>
       {slides.map((slide, idx) => (
@@ -372,11 +531,11 @@ export function SlideshowGrid({ slides, onSlideClick, className }: SlideshowGrid
           )}
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
+          <div className={cn("absolute inset-0", overlayClass)} />
 
           {/* Content */}
           <div className="absolute inset-0 flex flex-col justify-end p-2">
-            <span className="mb-0.5 text-[10px] font-medium text-primary">
+            <span className={cn("mb-0.5 text-[10px] font-medium", badgeClass)}>
               Slide {slide.slideNumber}
             </span>
             <h4 className="line-clamp-2 text-[11px] font-semibold leading-tight text-white">

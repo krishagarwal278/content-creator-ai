@@ -36,6 +36,7 @@ import { useAuth } from "@/common/contexts/AuthContext";
 import { SlideshowPreview } from "@/common/components/ui/slideshow-preview";
 import { exportSlideshow } from "@/api/slideshow-service";
 import type { SlideData } from "@/api/slideshow-service";
+import type { SlideshowStyle } from "@/api/slideshow-service";
 import { toast } from "sonner";
 import {
   videoGenerationService,
@@ -438,12 +439,26 @@ function normalizeSlideshowSlides(slidesRaw: unknown): SlideData[] {
     const imageUrl =
       typeof rawImageUrl === "string" && rawImageUrl.trim().length > 0 ? rawImageUrl.trim() : "";
 
+    const rawKeyStat = s?.keyStat ?? s?.key_stat;
+    const keyStat =
+      typeof rawKeyStat === "string" && rawKeyStat.trim().length > 0
+        ? rawKeyStat.trim()
+        : undefined;
+
+    const rawSubtitle = s?.subtitle ?? s?.sub_title;
+    const subtitle =
+      typeof rawSubtitle === "string" && rawSubtitle.trim().length > 0
+        ? rawSubtitle.trim()
+        : undefined;
+
     return {
       slideNumber: Number.isFinite(slideNumber) && slideNumber > 0 ? slideNumber : idx + 1,
       title,
       bulletPoints,
       narration,
       imageUrl: imageUrl || undefined,
+      keyStat,
+      subtitle,
 
       // Provide alternate key names for backend exporters that may expect snake_case.
       // (Also harmless for the frontend preview.)
@@ -456,6 +471,18 @@ function normalizeSlideshowSlides(slidesRaw: unknown): SlideData[] {
       ...s,
     };
   });
+}
+
+function normalizeSlideshowDesignStyle(styleRaw: unknown): SlideshowStyle {
+  switch (styleRaw) {
+    case "modern":
+    case "minimal":
+    case "corporate":
+    case "creative":
+      return styleRaw;
+    default:
+      return "modern";
+  }
 }
 
 function SlideCard({ item, onClick }: { item: StoredSlideshow; onClick: () => void }) {
@@ -619,6 +646,12 @@ const History = () => {
 
   const selectedTotalDuration =
     selectedSlideshow?.totalDuration ?? selectedSlideshow?.total_duration ?? undefined;
+
+  const selectedSlideshowStyle = normalizeSlideshowDesignStyle(
+    (selectedSlideshow as any)?.style ??
+      (selectedSlideshow as any)?.slideshow_style ??
+      (selectedSlideshow as any)?.metadata?.style,
+  );
 
   const handleDownloadSlides = async (format: "pptx" | "pdf") => {
     if (!selectedSlides.length) {
@@ -878,6 +911,7 @@ const History = () => {
                   totalDuration={selectedTotalDuration}
                   autoPlay={false}
                   className="w-full"
+                  style={selectedSlideshowStyle}
                 />
                 <div className="flex flex-wrap gap-2">
                   <Button

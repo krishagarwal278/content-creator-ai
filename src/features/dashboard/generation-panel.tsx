@@ -654,9 +654,10 @@ export function GenerationPanel({
                 slides={slideshowSlides}
                 totalDuration={slideshowTotalDuration}
                 onDownload={() => handleExportSlideshow("pptx")}
+                style={slideshowStyle}
               />
             ) : (
-              <SlideshowGrid slides={slideshowSlides} />
+              <SlideshowGrid slides={slideshowSlides} style={slideshowStyle} />
             )}
           </div>
         </div>
