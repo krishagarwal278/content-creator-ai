@@ -149,6 +149,24 @@ describe("interest-service", () => {
       await expect(submitInterestForm(validFormData)).rejects.toThrow("Email already exists");
     });
 
+    it("should use field-specific message when API returns fieldErrors", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            error: {
+              fieldErrors: {
+                earlyAccessPriority: ["Please select your interest level"],
+              },
+            },
+          }),
+      });
+
+      await expect(submitInterestForm(validFormData)).rejects.toThrow(
+        "Early Access Priority: Please select your interest level",
+      );
+    });
+
     it("should throw connection error when fetch fails", async () => {
       mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
 

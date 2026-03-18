@@ -36,6 +36,13 @@ import { supabase } from "@/api/client";
 import { submitInterestForm, getInterestStats } from "@/api/interest-service";
 import { generateSlideshowPreview, type SlideData } from "@/api/slideshow-service";
 
+/** "Courses created" – only the 3 values the backend accepts. Do not add more. */
+const COURSES_CREATED_OPTIONS: { value: string; label: string }[] = [
+  { value: "very_interested", label: "10+ courses (Power creator)" },
+  { value: "somewhat_interested", label: "1–10 courses" },
+  { value: "just_exploring", label: "Planning my first course" },
+];
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const [showBetaLogin, setShowBetaLogin] = useState(false);
@@ -857,9 +864,11 @@ const LandingPage = () => {
                       <SelectValue placeholder="How many courses?" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="very_interested">10+ courses (Power creator)</SelectItem>
-                      <SelectItem value="somewhat_interested">1-10 courses</SelectItem>
-                      <SelectItem value="just_exploring">Planning my first course</SelectItem>
+                      {COURSES_CREATED_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1115,9 +1124,11 @@ const LandingPage = () => {
                     <SelectValue placeholder="How many?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="very_interested">10+ courses</SelectItem>
-                    <SelectItem value="somewhat_interested">1-10 courses</SelectItem>
-                    <SelectItem value="just_exploring">Planning first course</SelectItem>
+                    {COURSES_CREATED_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

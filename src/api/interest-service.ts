@@ -60,45 +60,108 @@ export interface InterestStats {
 }
 
 /**
- * Submit interest form to join the waitlist
+ * Build a user-facing message from API validation error payload (e.g. fieldErrors).
+ * Backend may return which field failed so the UI can show a specific message.
+ */
+function formatValidationError(json: Record<string, unknown>): string | null {
+  const fieldErrors = (json.error as Record<string, unknown>)?.fieldErrors ?? json.fieldErrors;
+  if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+    const entries = Object.entries(fieldErrors);
+    if (entries.length > 0) {
+      const [field, messages] = entries[0];
+      const msg = Array.isArray(messages) ? messages[0] : messages;
+      if (typeof msg === "string" && msg.trim()) {
+        const label = field.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+        return `${label}: ${msg}`;
+      }
+    }
+  }
+  return null;
+}
+
+/** Only these 3 values are sent for earlyAccessPriority – backend allowlist. */
+const ALLOWED_EARLY_ACCESS_PRIORITIES: EarlyAccessPriority[] = [
+  "very_interested",
+  "somewhat_interested",
+  "just_exploring",
+];
+
+/**
+ * Submit interest form to join the waitlist.
+ * Sends only allowed values; omits optional fields when empty to avoid backend validation errors.
  */
 export async function submitInterestForm(data: InterestFormData): Promise<InterestSubmission> {
   try {
+    const priority =
+      data.earlyAccessPriority &&
+      ALLOWED_EARLY_ACCESS_PRIORITIES.includes(data.earlyAccessPriority as EarlyAccessPriority)
+        ? data.earlyAccessPriority
+        : ALLOWED_EARLY_ACCESS_PRIORITIES[0];
+
+    const body: Record<string, unknown> = {
+      fullName: String(data.fullName ?? "").trim(),
+      email: String(data.email ?? "").trim(),
+      role: String(data.role ?? "").trim(),
+      earlyAccessPriority: priority,
+    };
+    if (Array.isArray(data.videoTopics) && data.videoTopics.length > 0) {
+      body.videoTopics = data.videoTopics;
+    }
+    if (data.useCase && String(data.useCase).trim()) {
+      body.useCase = data.useCase.trim();
+    }
+    if (data.aiExperience && String(data.aiExperience).trim()) {
+      body.aiExperience = data.aiExperience.trim();
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/v1/interest/submit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        fullName: data.fullName,
-        email: data.email,
-        role: data.role,
-        earlyAccessPriority: data.earlyAccessPriority,
-        videoTopics: data.videoTopics,
-        useCase: data.useCase,
-        aiExperience: data.aiExperience,
-      }),
+      body: JSON.stringify(body),
     });
 
-    const json = await response.json();
-
-    if (!response.ok) {
-      throw new Error(json.error?.message || json.message || "Failed to submit interest form");
+    let json: Record<string, unknown> = {};
+    try {
+      const parsed = await response.json();
+      json = typeof parsed === "object" && parsed !== null ? parsed : {};
+    } catch {
+      // 500 or non-JSON response
     }
 
-    const submission = json.data?.submission || json.submission;
+    if (!response.ok) {
+      const msg =
+        formatValidationError(json) ??
+        (json.error as Record<string, unknown>)?.message ??
+        json.message ??
+        (json.error as string);
+      throw new Error(typeof msg === "string" && msg ? msg : "Failed to submit. Please try again.");
+    }
+
+    const resData = json.data as Record<string, unknown> | undefined;
+    const submission = (resData?.submission ?? json.submission) as
+      | Record<string, unknown>
+      | undefined;
+    if (!submission || typeof submission !== "object") {
+      throw new Error("Invalid response from server. Please try again.");
+    }
     return {
-      id: submission.id,
-      fullName: submission.fullName || submission.full_name,
-      email: submission.email,
-      role: submission.role,
-      earlyAccessPriority: submission.earlyAccessPriority || submission.early_access_priority,
-      videoTopics: submission.videoTopics || submission.video_topics,
-      useCase: submission.useCase || submission.use_case,
-      aiExperience: submission.aiExperience || submission.ai_experience,
-      createdAt: submission.createdAt || submission.created_at,
-      status: submission.status,
-      isBetaUser: submission.isBetaUser || submission.is_beta_user,
+      id: String(submission.id ?? ""),
+      fullName: String(submission.fullName ?? submission.full_name ?? ""),
+      email: String(submission.email ?? ""),
+      role: String(submission.role ?? "") as UserRole,
+      earlyAccessPriority: String(
+        submission.earlyAccessPriority ?? submission.early_access_priority ?? "very_interested",
+      ) as EarlyAccessPriority,
+      videoTopics: (submission.videoTopics ?? submission.video_topics) as string[] | undefined,
+      useCase: (submission.useCase ?? submission.use_case) as UseCase | undefined,
+      aiExperience: (submission.aiExperience ?? submission.ai_experience) as
+        | AIExperience
+        | undefined,
+      createdAt: String(submission.createdAt ?? submission.created_at ?? ""),
+      status: String(submission.status ?? "pending") as "pending" | "approved" | "rejected",
+      isBetaUser: Boolean(submission.isBetaUser ?? submission.is_beta_user),
     };
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("fetch")) {
