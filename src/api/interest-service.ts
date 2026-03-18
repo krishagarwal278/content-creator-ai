@@ -14,7 +14,14 @@ export type UserRole =
   | "developer"
   | "other";
 
-export type EarlyAccessPriority = "very_interested" | "somewhat_interested" | "just_exploring";
+export type EarlyAccessPriority =
+  | "very_interested"
+  | "somewhat_interested"
+  | "just_exploring"
+  | "planning_my_first_course"
+  | "few_courses"
+  | "many_courses"
+  | "scale_courses";
 
 export type UseCase =
   | "create_learning_videos"
@@ -60,6 +67,26 @@ export interface InterestStats {
 }
 
 /**
+ * Build a user-facing message from API validation error payload (e.g. fieldErrors).
+ * Backend may return which field failed so the UI can show a specific message.
+ */
+function formatValidationError(json: Record<string, unknown>): string | null {
+  const fieldErrors = (json.error as Record<string, unknown>)?.fieldErrors ?? json.fieldErrors;
+  if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+    const entries = Object.entries(fieldErrors);
+    if (entries.length > 0) {
+      const [field, messages] = entries[0];
+      const msg = Array.isArray(messages) ? messages[0] : messages;
+      if (typeof msg === "string" && msg.trim()) {
+        const label = field.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+        return `${label}: ${msg}`;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Submit interest form to join the waitlist
  */
 export async function submitInterestForm(data: InterestFormData): Promise<InterestSubmission> {
@@ -83,7 +110,8 @@ export async function submitInterestForm(data: InterestFormData): Promise<Intere
     const json = await response.json();
 
     if (!response.ok) {
-      throw new Error(json.error?.message || json.message || "Failed to submit interest form");
+      const msg = formatValidationError(json) ?? json.error?.message ?? json.message;
+      throw new Error(msg || "Failed to submit interest form");
     }
 
     const submission = json.data?.submission || json.submission;
