@@ -390,6 +390,54 @@ export async function getAllScreenplays(userId?: string): Promise<StoredScreenpl
   }
 }
 
+export interface StoredSlideshow {
+  id: string;
+  title?: string | null;
+  slides?: unknown;
+  slideCount?: number | null;
+  slide_count?: number | null;
+  totalDuration?: number | null;
+  total_duration?: number | null;
+  createdAt?: string;
+  created_at?: string;
+  projectId?: string | null;
+  project_id?: string | null;
+  userId?: string;
+  user_id?: string;
+}
+
+/**
+ * Get saved slideshows (presentation outputs) for a user.
+ * Backend: GET /api/v1/video/slideshows?userId=...
+ */
+export async function getAllSlideshows(userId?: string): Promise<StoredSlideshow[]> {
+  try {
+    const url = userId
+      ? `${BACKEND_URL}/api/v1/video/slideshows?userId=${userId}`
+      : `${BACKEND_URL}/api/v1/video/slideshows`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch slideshows" }));
+      throw new Error(error.message || "Failed to fetch slideshows");
+    }
+
+    const data = await response.json();
+
+    const list = data.data?.slideshows ?? data.data ?? data.slideshows ?? [];
+
+    return Array.isArray(list) ? list : [];
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Cannot connect to backend at ${BACKEND_URL}. Make sure your backend server is running.`,
+      );
+    }
+    throw error;
+  }
+}
+
 // =============================================================================
 // Project Chat API (persist chat per project; backend must implement GET/POST)
 // =============================================================================
@@ -680,6 +728,7 @@ export const videoGenerationService = {
   getVideoStatus,
   getProjectScreenplays,
   getAllScreenplays,
+  getAllSlideshows,
   getProjectChat,
   saveProjectChatMessages,
   getGenerationHistory,

@@ -33,6 +33,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/common/contexts/AuthContext";
+import { SlideshowPreview } from "@/common/components/ui/slideshow-preview";
+import { exportSlideshow } from "@/api/slideshow-service";
+import type { SlideData } from "@/api/slideshow-service";
+import { toast } from "sonner";
 import {
   videoGenerationService,
   type GenerationHistoryEntry,
@@ -40,7 +44,7 @@ import {
   type VideoFormat,
   type GenerationType,
   type GenerationStatus,
-  type StoredScreenplay,
+  type StoredSlideshow,
 } from "@/api/video-generation-service";
 
 const formatLabels: Record<VideoFormat, string> = {
@@ -94,6 +98,73 @@ const statusConfig: Record<
     className: "bg-red-500/20 text-red-400 border-red-500/30",
   },
 };
+
+function ActualDurationSeconds({
+  videoUrl,
+  fallbackDuration,
+  status,
+}: {
+  videoUrl: string | null;
+  fallbackDuration: number;
+  status: GenerationStatus;
+}) {
+  const shouldMeasure = status === "completed" && !!videoUrl;
+  const [resolvedDuration, setResolvedDuration] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!shouldMeasure || !videoUrl) {
+      setResolvedDuration(null);
+      return;
+    }
+
+    let cancelled = false;
+    const videoEl = document.createElement("video");
+    videoEl.preload = "metadata";
+    videoEl.crossOrigin = "anonymous";
+    videoEl.src = videoUrl;
+
+    const loaded = () => {
+      if (cancelled) {
+        return;
+      }
+      const d = videoEl.duration;
+      if (Number.isFinite(d) && d > 0) {
+        setResolvedDuration(Math.round(d));
+      } else {
+        // If metadata is missing/invalid, fall back to the backend duration.
+        setResolvedDuration(fallbackDuration);
+      }
+    };
+
+    const errored = () => {
+      if (cancelled) {
+        return;
+      }
+      setResolvedDuration(fallbackDuration);
+    };
+
+    videoEl.addEventListener("loadedmetadata", loaded);
+    videoEl.addEventListener("error", errored);
+
+    return () => {
+      cancelled = true;
+      videoEl.removeEventListener("loadedmetadata", loaded);
+      videoEl.removeEventListener("error", errored);
+    };
+  }, [shouldMeasure, videoUrl, fallbackDuration]);
+
+  // For non-video or not-yet-completed entries, trust the backend field.
+  if (!shouldMeasure) {
+    return <>{fallbackDuration}s</>;
+  }
+
+  // While we are measuring, avoid showing incorrect values.
+  if (resolvedDuration == null) {
+    return null;
+  }
+
+  return <>{resolvedDuration}s</>;
+}
 
 function HistoryCard({ item, onClick }: { item: GenerationHistoryEntry; onClick: () => void }) {
   const date = new Date(item.created_at);
@@ -152,7 +223,11 @@ function HistoryCard({ item, onClick }: { item: GenerationHistoryEntry; onClick:
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {item.duration}s
+              <ActualDurationSeconds
+                videoUrl={item.video_url}
+                fallbackDuration={item.duration}
+                status={item.status}
+              />
             </span>
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
@@ -208,7 +283,11 @@ function VideoCard({ item, onClick }: { item: GenerationHistoryEntry; onClick: (
         </div>
         <div className="absolute bottom-2 right-2">
           <span className="rounded bg-black/60 px-1.5 py-0.5 text-xs text-white">
-            {item.duration}s
+            <ActualDurationSeconds
+              videoUrl={item.video_url}
+              fallbackDuration={item.duration}
+              status={item.status}
+            />
           </span>
         </div>
       </div>
@@ -323,8 +402,66 @@ function LoadingState() {
   );
 }
 
-function SlideCard({ item, onClick }: { item: StoredScreenplay; onClick: () => void }) {
-  const date = new Date(item.createdAt);
+function normalizeSlideshowSlides(slidesRaw: unknown): SlideData[] {
+  if (!Array.isArray(slidesRaw)) {
+    return [];
+  }
+
+  return slidesRaw.map((slide: unknown, idx: number) => {
+    const s = slide as any;
+
+    const rawSlideNumber = s?.slideNumber ?? s?.slide_number ?? s?.slideNum;
+    const slideNumber =
+      typeof rawSlideNumber === "number" ? rawSlideNumber : Number(rawSlideNumber ?? idx + 1);
+
+    const rawTitle = s?.title ?? s?.slideTitle ?? s?.heading;
+    const title =
+      typeof rawTitle === "string" && rawTitle.trim().length > 0 ? rawTitle : `Slide ${idx + 1}`;
+
+    const rawBullets = s?.bulletPoints ?? s?.bullet_points ?? s?.bullets ?? [];
+    const bulletPoints = Array.isArray(rawBullets)
+      ? rawBullets.map((b: any) => String(b)).filter((b: string) => b.trim().length > 0)
+      : [];
+
+    const rawNarration = s?.narration ?? s?.narration_text;
+    const narration = typeof rawNarration === "string" ? rawNarration : "";
+
+    const rawImageUrl =
+      s?.imageUrl ??
+      s?.image_url ??
+      s?.image ??
+      s?.imageUrl?.url ??
+      s?.image_url?.url ??
+      s?.image?.url ??
+      s?.imageLink ??
+      s?.image_link;
+    const imageUrl =
+      typeof rawImageUrl === "string" && rawImageUrl.trim().length > 0 ? rawImageUrl.trim() : "";
+
+    return {
+      slideNumber: Number.isFinite(slideNumber) && slideNumber > 0 ? slideNumber : idx + 1,
+      title,
+      bulletPoints,
+      narration,
+      imageUrl: imageUrl || undefined,
+
+      // Provide alternate key names for backend exporters that may expect snake_case.
+      // (Also harmless for the frontend preview.)
+      image_url: imageUrl || undefined,
+      bullet_points: bulletPoints,
+      narration_text: narration || undefined,
+      slide_number: Number.isFinite(slideNumber) && slideNumber > 0 ? slideNumber : idx + 1,
+
+      // Preserve any extra fields present in DB payloads.
+      ...s,
+    };
+  });
+}
+
+function SlideCard({ item, onClick }: { item: StoredSlideshow; onClick: () => void }) {
+  const date = new Date(item.createdAt ?? item.created_at ?? Date.now());
+  const slidesCount =
+    item.slideCount ?? item.slide_count ?? (Array.isArray(item.slides) ? item.slides.length : 0);
 
   return (
     <div
@@ -337,11 +474,9 @@ function SlideCard({ item, onClick }: { item: StoredScreenplay; onClick: () => v
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="mb-1 truncate font-semibold group-hover:text-primary">
-            {item.screenplay?.title || "Untitled screenplay"}
+            {item.title || "Untitled slideshow"}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            {item.screenplay?.scenes?.length ?? 0} scenes · {item.screenplay?.format ?? "—"}
-          </p>
+          <p className="text-xs text-muted-foreground">{slidesCount} slides</p>
           <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             {format(date, "MMM d, yyyy")}
@@ -381,9 +516,10 @@ const History = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
-  const [screenplays, setScreenplays] = useState<StoredScreenplay[]>([]);
-  const [screenplaysLoading, setScreenplaysLoading] = useState(false);
-  const [selectedScreenplay, setSelectedScreenplay] = useState<StoredScreenplay | null>(null);
+  const [slideshows, setSlideshows] = useState<StoredSlideshow[]>([]);
+  const [slideshowsLoading, setSlideshowsLoading] = useState(false);
+  const [selectedSlideshow, setSelectedSlideshow] = useState<StoredSlideshow | null>(null);
+  const [isExportingSlides, setIsExportingSlides] = useState<"pptx" | "pdf" | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!user?.id) {
@@ -419,26 +555,26 @@ const History = () => {
     fetchHistory();
   }, [fetchHistory]);
 
-  const fetchScreenplays = useCallback(async () => {
+  const fetchSlideshows = useCallback(async () => {
     if (!user?.id) {
       return;
     }
-    setScreenplaysLoading(true);
+    setSlideshowsLoading(true);
     try {
-      const list = await videoGenerationService.getAllScreenplays(user.id);
-      setScreenplays(list);
+      const list = await videoGenerationService.getAllSlideshows(user.id);
+      setSlideshows(list);
     } catch {
-      setScreenplays([]);
+      setSlideshows([]);
     } finally {
-      setScreenplaysLoading(false);
+      setSlideshowsLoading(false);
     }
   }, [user?.id]);
 
   useEffect(() => {
     if (activeTab === "slides" && user?.id) {
-      fetchScreenplays();
+      fetchSlideshows();
     }
-  }, [activeTab, user?.id, fetchScreenplays]);
+  }, [activeTab, user?.id, fetchSlideshows]);
 
   const filteredHistory = useMemo(() => {
     if (!searchQuery) {
@@ -450,13 +586,64 @@ const History = () => {
   }, [history, searchQuery]);
 
   const filteredVideos = useMemo(() => {
+    const completed = videos.filter((item) => item.status === "completed" && !!item.video_url);
+
     if (!searchQuery) {
-      return videos;
+      return completed;
     }
-    return videos.filter((item) =>
+
+    return completed.filter((item) =>
       item.project_name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [videos, searchQuery]);
+
+  const filteredSlideshows = useMemo(() => {
+    const withSlides = slideshows.filter((item) => {
+      const normalized = normalizeSlideshowSlides(item.slides);
+      return normalized.length > 0;
+    });
+
+    if (!searchQuery) {
+      return withSlides;
+    }
+
+    return withSlides.filter((item) =>
+      (item.title ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [slideshows, searchQuery]);
+
+  const selectedSlides = useMemo(
+    () => normalizeSlideshowSlides(selectedSlideshow?.slides),
+    [selectedSlideshow],
+  );
+
+  const selectedTotalDuration =
+    selectedSlideshow?.totalDuration ?? selectedSlideshow?.total_duration ?? undefined;
+
+  const handleDownloadSlides = async (format: "pptx" | "pdf") => {
+    if (!selectedSlides.length) {
+      return;
+    }
+
+    setIsExportingSlides(format);
+    try {
+      const result = await exportSlideshow({
+        slides: selectedSlides,
+        title: selectedSlideshow?.title || "Slideshow",
+        format,
+      });
+
+      if (result.success) {
+        toast.success(`Downloaded as ${format.toUpperCase()}`);
+      } else {
+        toast.error(result.error || "Download failed");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Download failed");
+    } finally {
+      setIsExportingSlides(null);
+    }
+  };
 
   const handleItemClick = (item: GenerationHistoryEntry) => {
     navigate(`/history/view/${item.id}`);
@@ -618,14 +805,14 @@ const History = () => {
               className="glass-strong rounded-2xl border border-border/50 p-6"
               style={{ animationDelay: "0.2s" }}
             >
-              {screenplaysLoading ? (
+              {slideshowsLoading ? (
                 <LoadingState />
-              ) : screenplays.length === 0 ? (
+              ) : filteredSlideshows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Presentation className="mb-4 h-8 w-8 text-muted-foreground/60" />
                   <h3 className="mb-2 text-lg font-semibold">No saved slides yet</h3>
                   <p className="text-sm text-muted-foreground">
-                    Your saved screenplays and slides will appear here.
+                    Your saved presentations will appear here.
                   </p>
                   <Button onClick={() => navigate("/dashboard")} className="mt-4">
                     Create content
@@ -633,11 +820,11 @@ const History = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {screenplays.map((item) => (
+                  {filteredSlideshows.map((item) => (
                     <SlideCard
                       key={item.id}
                       item={item}
-                      onClick={() => setSelectedScreenplay(item)}
+                      onClick={() => setSelectedSlideshow(item)}
                     />
                   ))}
                 </div>
@@ -678,28 +865,54 @@ const History = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Screenplay detail modal */}
-        <Dialog open={!!selectedScreenplay} onOpenChange={() => setSelectedScreenplay(null)}>
+        {/* Slideshow detail modal */}
+        <Dialog open={!!selectedSlideshow} onOpenChange={() => setSelectedSlideshow(null)}>
           <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{selectedScreenplay?.screenplay?.title || "Screenplay"}</DialogTitle>
+              <DialogTitle>{selectedSlideshow?.title || "Slideshow"}</DialogTitle>
             </DialogHeader>
-            {selectedScreenplay?.screenplay && (
+            {selectedSlides.length > 0 ? (
               <div className="space-y-4 text-sm">
-                <p className="text-muted-foreground">
-                  {selectedScreenplay.screenplay.scenes?.length ?? 0} scenes ·{" "}
-                  {selectedScreenplay.screenplay.format} ·{" "}
-                  {selectedScreenplay.screenplay.totalDuration}s
-                </p>
-                <ul className="space-y-3">
-                  {selectedScreenplay.screenplay.scenes?.map((scene, i) => (
-                    <li key={i} className="rounded-lg border border-border/50 bg-muted/20 p-3">
-                      <span className="font-medium">Scene {scene.sceneNumber}</span>
-                      <p className="mt-1 text-muted-foreground">{scene.visualDescription}</p>
-                      {scene.narration && <p className="mt-1 italic">{scene.narration}</p>}
-                    </li>
-                  ))}
-                </ul>
+                <SlideshowPreview
+                  slides={selectedSlides}
+                  totalDuration={selectedTotalDuration}
+                  autoPlay={false}
+                  className="w-full"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={() => handleDownloadSlides("pptx")}
+                    disabled={isExportingSlides === "pptx" || isExportingSlides === "pdf"}
+                  >
+                    {isExportingSlides === "pptx" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Film className="h-3.5 w-3.5" />
+                    )}
+                    Download PPTX
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={() => handleDownloadSlides("pdf")}
+                    disabled={isExportingSlides === "pdf" || isExportingSlides === "pptx"}
+                  >
+                    {isExportingSlides === "pdf" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Film className="h-3.5 w-3.5" />
+                    )}
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm text-muted-foreground">
+                No slides found for this saved slideshow.
               </div>
             )}
           </DialogContent>

@@ -33,12 +33,16 @@ export interface SlideshowPreviewOptions {
 }
 
 export interface SlideshowRequest {
+  /** Main content: full document text (prefer extracted) or topic. Backend uses first ~28k chars when present. */
   content: string;
   title?: string;
   maxSlides?: number;
   style?: SlideshowStyle;
   userId?: string;
+  projectId?: string;
   contentAiModel?: ContentAiModel;
+  /** When set, request is sent as multipart with this file as "document" so backend can extract server-side. */
+  document?: File;
 }
 
 /**
@@ -103,16 +107,53 @@ export async function generateSlideshowPreview(
 }
 
 /**
- * Generate a full slideshow (up to 15 slides) from content
+ * Generate a full slideshow (up to 15 slides) from content.
+ * Sends JSON with content (full text) or multipart with document file when request.document is set.
  */
 export async function generateSlideshow(request: SlideshowRequest): Promise<SlideshowResponse> {
   try {
     console.log("[Slideshow] Generating full slideshow...");
 
+    let body: string | FormData;
+    let headers: HeadersInit = {};
+
+    if (request.document) {
+      const form = new FormData();
+      form.append("document", request.document);
+      form.append("content", request.content);
+      if (request.title != null) {
+        form.append("title", request.title);
+      }
+      if (request.maxSlides != null) {
+        form.append("maxSlides", String(request.maxSlides));
+      }
+      if (request.style) {
+        form.append("style", request.style);
+      }
+      if (request.userId) {
+        form.append("userId", request.userId);
+      }
+      if (request.contentAiModel) {
+        form.append("contentAiModel", request.contentAiModel);
+      }
+      body = form;
+      // Do not set Content-Type; browser sets multipart boundary
+    } else {
+      headers = { "Content-Type": "application/json" };
+      body = JSON.stringify({
+        content: request.content,
+        title: request.title,
+        maxSlides: request.maxSlides,
+        style: request.style,
+        userId: request.userId,
+        contentAiModel: request.contentAiModel,
+      });
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/v1/video/generate-slideshow`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+      headers,
+      body,
     });
 
     if (!response.ok) {

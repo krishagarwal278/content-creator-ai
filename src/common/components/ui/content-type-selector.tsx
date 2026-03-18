@@ -26,6 +26,7 @@ const contentTypes: ContentType[] = [
     description: "Quick explainer",
     icon: Film,
     duration: "1-3min",
+    comingSoon: true,
   },
   {
     id: "vfx_movie",

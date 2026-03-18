@@ -22,7 +22,6 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { SlideshowPreview, SlideshowGrid } from "@/components/ui/slideshow-preview";
 import {
   Select,
   SelectContent,
@@ -30,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SlideshowPreview, SlideshowGrid } from "@/common/components/ui/slideshow-preview";
 import type { Project } from "@/common/hooks/useProjects";
 import type { PexelsVideo } from "@/common/hooks/usePexelsVideos";
 import { storageService } from "@/api/storage-service";
@@ -101,11 +101,43 @@ export function GenerationPanel({
   // Slideshow state
   const [isGeneratingSlideshow, setIsGeneratingSlideshow] = useState(false);
   const [slideshowSlides, setSlideshowSlides] = useState<SlideData[] | null>(null);
+  const [slideshowTotalDuration, setSlideshowTotalDuration] = useState<number | undefined>(
+    undefined,
+  );
   const [slideshowStyle, setSlideshowStyle] = useState<SlideshowStyle>("modern");
   const [slideshowView, setSlideshowView] = useState<"carousel" | "grid">("carousel");
   const [contentAiModel, setContentAiModel] = useState<ContentAiModel>("openai");
   const [isExportingSlideshow, setIsExportingSlideshow] = useState<"pptx" | "pdf" | null>(null);
+  const [isDropOver, setIsDropOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = (newFiles: File[]) => {
+    const uploadedFiles: UploadedFile[] = newFiles.map((file) => ({
+      id: Math.random().toString(36).slice(2, 11),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      file,
+    }));
+    handleFilesChange([...files, ...uploadedFiles]);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(true);
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(false);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDropOver(false);
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length) {
+      addFiles(dropped);
+    }
+  };
 
   const formatMap: Record<string, VideoFormat> = {
     reel: "reel",
@@ -319,41 +351,61 @@ export function GenerationPanel({
     }
   };
 
-  const canGenerate = topic.trim().length > 0;
+  const canGenerate =
+    topic.trim().length > 0 ||
+    (extractedContent?.text?.trim().length ?? 0) > 50 ||
+    files.some((f) => f.file != null);
 
-  // Full slideshow generation
+  // Full slideshow generation: send full document text (or file as multipart) so backend gets real content
   const handleFullSlideshow = async () => {
-    if (!extractedContent?.text && !topic.trim()) {
-      toast.error("Please add a topic or upload a document first");
+    const hasTopic = topic.trim().length > 0;
+    const hasExtractedText = !!extractedContent?.text?.trim();
+    const firstFileWithBlob = files.find((f) => f.file);
+
+    if (!hasExtractedText && !hasTopic && !firstFileWithBlob) {
+      toast.error("Please add a topic, paste content, or attach a document");
       return;
     }
 
     setIsGeneratingSlideshow(true);
     setSlideshowSlides(null);
+    setSlideshowTotalDuration(undefined);
 
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      const content = extractedContent?.text || topic;
-      const title = extractedContent?.documents[0]?.title || topic.slice(0, 50);
-      const maxSlides = Math.round(duration[0] / 6); // Calculate from slider
+      // Backend uses first ~28k chars; prefer full extracted text so "content is short" is avoided
+      const rawContent = extractedContent?.text?.trim() || topic.trim() || "";
+      const content = rawContent.length > 28000 ? rawContent.slice(0, 28000) : rawContent;
+      const title = extractedContent?.documents[0]?.title || topic.slice(0, 50) || "Slideshow";
+      const maxSlides = Math.round(duration[0] / 6);
 
-      toast.info(`Generating slideshow (up to ${maxSlides} slides)...`);
+      // If we have an attached file but extraction failed or is too short, send file as multipart so backend extracts
+      const extractionFailed = !extractedContent?.text || extractedContent.text.trim().length < 200;
+      const sendDocument = !!firstFileWithBlob?.file && extractionFailed;
+
+      toast.info(
+        sendDocument
+          ? `Generating slideshow from document (up to ${maxSlides} slides)...`
+          : `Generating slideshow (up to ${maxSlides} slides)...`,
+      );
 
       const result = await generateSlideshow({
-        content,
+        content: content || topic.trim() || "",
         title,
         maxSlides,
         style: slideshowStyle,
         userId: user?.id,
         contentAiModel,
+        ...(sendDocument && firstFileWithBlob?.file ? { document: firstFileWithBlob.file } : {}),
       });
 
-      if (result.success && result.slides) {
+      if (result.success && result.slides?.length) {
         setSlideshowSlides(result.slides);
-        toast.success(`Generated ${result.slideCount} slides!`);
+        setSlideshowTotalDuration(result.totalDuration);
+        toast.success(`Generated ${result.slideCount ?? result.slides.length} slides!`);
       } else {
         toast.error(result.error || "Failed to generate slideshow");
       }
@@ -585,10 +637,30 @@ export function GenerationPanel({
                 )}
                 Download as PDF
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={handleDownloadSlideshow}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download as JSON
+              </Button>
             </div>
           </div>
-        )}
-      </section>
+          <div className="mt-4">
+            {slideshowView === "carousel" ? (
+              <SlideshowPreview
+                slides={slideshowSlides}
+                totalDuration={slideshowTotalDuration}
+                onDownload={() => handleExportSlideshow("pptx")}
+              />
+            ) : (
+              <SlideshowGrid slides={slideshowSlides} />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Selected Background Video */}
       {selectedVideo && (
@@ -646,8 +718,8 @@ export function GenerationPanel({
             <div className="mb-2 flex items-center gap-2">
               <span className="text-sm font-medium">
                 {contentType === "presentation"
-                  ? "Choose Model for Slideshows"
-                  : "Choose Model for Screenplay Generation"}
+                  ? "Choose Model for Screenplay Generation"
+                  : "Choose Model for Slideshows"}
               </span>
               <span className="text-xs text-muted-foreground">
                 {contentType === "presentation"
