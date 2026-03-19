@@ -34,6 +34,9 @@ const HistoryViewPage = lazy(() =>
   import("./features/dashboard/HistoryViewPage").then((m) => ({ default: m.HistoryViewPage })),
 );
 const ProjectsPage = lazy(() => import("./features/projects/Projects"));
+const ProjectFilesPage = lazy(() =>
+  import("./features/projects/ProjectFilesPage").then((m) => ({ default: m.default })),
+);
 const SettingsPage = lazy(() => import("./features/settings/Settings"));
 const NotFound = lazy(() => import("@/common/components/NotFound"));
 
@@ -68,6 +71,7 @@ function AppContent() {
                       <Route path="/dashboard" element={<DashboardPage />} />
                       <Route path="/project/:id" element={<DashboardPage />} />
                       <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/projects/:projectId/files" element={<ProjectFilesPage />} />
                       <Route path="/history" element={<HistoryPage />} />
                       <Route path="/history/view/:entryId" element={<HistoryViewPage />} />
                       <Route path="/settings" element={<SettingsPage />} />

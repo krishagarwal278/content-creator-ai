@@ -35,8 +35,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/common/contexts/AuthContext";
 import { SlideshowPreview } from "@/common/components/ui/slideshow-preview";
 import { exportSlideshow } from "@/api/slideshow-service";
-import type { SlideData } from "@/api/slideshow-service";
-import type { SlideshowStyle } from "@/api/slideshow-service";
+import {
+  normalizeSlideshowSlides,
+  normalizeSlideshowDesignStyle,
+} from "@/features/dashboard/normalizeSlideshow";
 import { toast } from "sonner";
 import {
   videoGenerationService,
@@ -403,92 +405,11 @@ function LoadingState() {
   );
 }
 
-function normalizeSlideshowSlides(slidesRaw: unknown): SlideData[] {
-  if (!Array.isArray(slidesRaw)) {
-    return [];
-  }
-
-  return slidesRaw.map((slide: unknown, idx: number) => {
-    const s = slide as any;
-
-    const rawSlideNumber = s?.slideNumber ?? s?.slide_number ?? s?.slideNum;
-    const slideNumber =
-      typeof rawSlideNumber === "number" ? rawSlideNumber : Number(rawSlideNumber ?? idx + 1);
-
-    const rawTitle = s?.title ?? s?.slideTitle ?? s?.heading;
-    const title =
-      typeof rawTitle === "string" && rawTitle.trim().length > 0 ? rawTitle : `Slide ${idx + 1}`;
-
-    const rawBullets = s?.bulletPoints ?? s?.bullet_points ?? s?.bullets ?? [];
-    const bulletPoints = Array.isArray(rawBullets)
-      ? rawBullets.map((b: any) => String(b)).filter((b: string) => b.trim().length > 0)
-      : [];
-
-    const rawNarration = s?.narration ?? s?.narration_text;
-    const narration = typeof rawNarration === "string" ? rawNarration : "";
-
-    const rawImageUrl =
-      s?.imageUrl ??
-      s?.image_url ??
-      s?.image ??
-      s?.imageUrl?.url ??
-      s?.image_url?.url ??
-      s?.image?.url ??
-      s?.imageLink ??
-      s?.image_link;
-    const imageUrl =
-      typeof rawImageUrl === "string" && rawImageUrl.trim().length > 0 ? rawImageUrl.trim() : "";
-
-    const rawKeyStat = s?.keyStat ?? s?.key_stat;
-    const keyStat =
-      typeof rawKeyStat === "string" && rawKeyStat.trim().length > 0
-        ? rawKeyStat.trim()
-        : undefined;
-
-    const rawSubtitle = s?.subtitle ?? s?.sub_title;
-    const subtitle =
-      typeof rawSubtitle === "string" && rawSubtitle.trim().length > 0
-        ? rawSubtitle.trim()
-        : undefined;
-
-    return {
-      slideNumber: Number.isFinite(slideNumber) && slideNumber > 0 ? slideNumber : idx + 1,
-      title,
-      bulletPoints,
-      narration,
-      imageUrl: imageUrl || undefined,
-      keyStat,
-      subtitle,
-
-      // Provide alternate key names for backend exporters that may expect snake_case.
-      // (Also harmless for the frontend preview.)
-      image_url: imageUrl || undefined,
-      bullet_points: bulletPoints,
-      narration_text: narration || undefined,
-      slide_number: Number.isFinite(slideNumber) && slideNumber > 0 ? slideNumber : idx + 1,
-
-      // Preserve any extra fields present in DB payloads.
-      ...s,
-    };
-  });
-}
-
-function normalizeSlideshowDesignStyle(styleRaw: unknown): SlideshowStyle {
-  switch (styleRaw) {
-    case "modern":
-    case "minimal":
-    case "corporate":
-    case "creative":
-      return styleRaw;
-    default:
-      return "modern";
-  }
-}
-
 function SlideCard({ item, onClick }: { item: StoredSlideshow; onClick: () => void }) {
   const date = new Date(item.createdAt ?? item.created_at ?? Date.now());
   const slidesCount =
     item.slideCount ?? item.slide_count ?? (Array.isArray(item.slides) ? item.slides.length : 0);
+  const projectName = item.projectName ?? item.project_name ?? null;
 
   return (
     <div
@@ -503,7 +424,14 @@ function SlideCard({ item, onClick }: { item: StoredSlideshow; onClick: () => vo
           <h3 className="mb-1 truncate font-semibold group-hover:text-primary">
             {item.title || "Untitled slideshow"}
           </h3>
-          <p className="text-xs text-muted-foreground">{slidesCount} slides</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {projectName && (
+              <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                {projectName}
+              </span>
+            )}
+            <p className="text-xs text-muted-foreground">{slidesCount} slides</p>
+          </div>
           <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             {format(date, "MMM d, yyyy")}

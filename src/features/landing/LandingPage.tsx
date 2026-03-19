@@ -36,15 +36,11 @@ import { supabase } from "@/api/client";
 import { submitInterestForm, getInterestStats } from "@/api/interest-service";
 import { generateSlideshowPreview, type SlideData } from "@/api/slideshow-service";
 
-/** Values and labels for "Courses created" – must match backend earlyAccessPriority allowlist */
+/** "Courses created" – only the 3 values the backend accepts. Do not add more. */
 const COURSES_CREATED_OPTIONS: { value: string; label: string }[] = [
-  { value: "planning_my_first_course", label: "Planning my first course" },
-  { value: "few_courses", label: "A few courses" },
-  { value: "somewhat_interested", label: "1–10 courses" },
-  { value: "many_courses", label: "Many courses" },
-  { value: "scale_courses", label: "Scaling / 10+ courses" },
   { value: "very_interested", label: "10+ courses (Power creator)" },
-  { value: "just_exploring", label: "Just exploring" },
+  { value: "somewhat_interested", label: "1–10 courses" },
+  { value: "just_exploring", label: "Planning my first course" },
 ];
 
 const LandingPage = () => {

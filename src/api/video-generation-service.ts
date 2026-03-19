@@ -402,19 +402,36 @@ export interface StoredSlideshow {
   created_at?: string;
   projectId?: string | null;
   project_id?: string | null;
+  /** Project name when returned by API (for History slide cards) */
+  projectName?: string | null;
+  project_name?: string | null;
+  /** Design style (modern | minimal | corporate | creative) for preview/export */
+  style?: string | null;
+  slideshow_style?: string | null;
+  metadata?: { style?: string } | null;
   userId?: string;
   user_id?: string;
 }
 
 /**
  * Get saved slideshows (presentation outputs) for a user.
- * Backend: GET /api/v1/video/slideshows?userId=...
+ * Backend: GET /api/v1/video/slideshows?userId=...&projectId=... (projectId optional).
+ * Response includes projectId/project_id and projectName/project_name per item when set.
  */
-export async function getAllSlideshows(userId?: string): Promise<StoredSlideshow[]> {
+export async function getAllSlideshows(
+  userId?: string,
+  projectId?: string,
+): Promise<StoredSlideshow[]> {
   try {
-    const url = userId
-      ? `${BACKEND_URL}/api/v1/video/slideshows?userId=${userId}`
-      : `${BACKEND_URL}/api/v1/video/slideshows`;
+    const params = new URLSearchParams();
+    if (userId) {
+      params.set("userId", userId);
+    }
+    if (projectId) {
+      params.set("projectId", projectId);
+    }
+    const query = params.toString();
+    const url = `${BACKEND_URL}/api/v1/video/slideshows${query ? `?${query}` : ""}`;
 
     const response = await fetch(url);
 
