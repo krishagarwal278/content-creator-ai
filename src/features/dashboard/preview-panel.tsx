@@ -337,11 +337,14 @@ export function PreviewPanel({
                   </p>
                   {screenplay && projectId && (
                     <Button
-                      onClick={handleGenerateVideo}
-                      className="bg-primary hover:bg-primary/90"
+                      disabled
+                      className="cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
                     >
                       <Video className="mr-2 h-4 w-4" />
                       Generate Video
+                      <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Coming Soon
+                      </span>
                     </Button>
                   )}
                 </div>

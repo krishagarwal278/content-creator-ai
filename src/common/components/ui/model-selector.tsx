@@ -13,6 +13,8 @@ interface Model {
   provider: string;
   description: string;
   price?: string;
+  /** When true, show "Coming Soon" and disable selection (MVP: screenplay is OpenAI only) */
+  comingSoon?: boolean;
 }
 
 const screenplayModels: Model[] = [
@@ -33,12 +35,14 @@ const screenplayModels: Model[] = [
     name: "Gemini 2.5 Flash",
     provider: "Google",
     description: "Balanced performance",
+    comingSoon: true,
   },
   {
     id: "gemini-2.5-pro",
     name: "Gemini 2.5 Pro",
     provider: "Google",
     description: "Advanced reasoning",
+    comingSoon: true,
   },
 ];
 
@@ -80,7 +84,8 @@ export function ModelSelector({ value, onValueChange }: ModelSelectorProps) {
           <SelectItem
             key={model.id}
             value={model.id}
-            className="cursor-pointer rounded-lg focus:bg-primary/10"
+            disabled={model.comingSoon}
+            className="cursor-pointer rounded-lg focus:bg-primary/10 disabled:opacity-70"
           >
             <div className="flex flex-col gap-0.5 py-1">
               <div className="flex items-center gap-2">
@@ -88,6 +93,11 @@ export function ModelSelector({ value, onValueChange }: ModelSelectorProps) {
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                   {model.provider}
                 </span>
+                {model.comingSoon && (
+                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Coming Soon
+                  </span>
+                )}
               </div>
               <span className="text-xs text-muted-foreground">{model.description}</span>
             </div>

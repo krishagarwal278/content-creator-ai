@@ -554,20 +554,17 @@ export function ChatPanel({
           </div>
         </div>
 
-        {/* Generate Video Button - Always visible, enabled after screenplay */}
+        {/* Generate Video Button - Coming Soon for MVP (screenplay-only) */}
         {!videoUrl && !isGeneratingVideo && (
           <Button
-            onClick={handleGenerateVideo}
-            disabled={!screenplay || !projectId}
-            className={cn(
-              "h-12 w-full rounded-xl text-base font-semibold transition-all",
-              screenplay && projectId
-                ? "bg-gradient-to-r from-primary via-primary/90 to-accent hover:shadow-[0_0_20px_hsl(174_72%_56%/0.3)]"
-                : "bg-muted text-muted-foreground",
-            )}
+            disabled
+            className="h-12 w-full cursor-not-allowed rounded-xl bg-muted text-base font-semibold text-muted-foreground"
           >
             <Video className="mr-2 h-5 w-5" />
             Generate Video
+            <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+              Coming Soon
+            </span>
           </Button>
         )}
       </div>

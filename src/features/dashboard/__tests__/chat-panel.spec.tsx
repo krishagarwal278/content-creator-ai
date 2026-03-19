@@ -151,7 +151,7 @@ describe("ChatPanel", () => {
       ).toBeInTheDocument();
     });
 
-    it("should enable Generate Video button when screenplay and projectId exist", () => {
+    it("should show Generate Video button with Coming Soon (disabled for MVP)", () => {
       const screenplay = createScreenplay();
 
       render(
@@ -163,7 +163,8 @@ describe("ChatPanel", () => {
       );
 
       const generateButton = screen.getByRole("button", { name: /Generate Video/i });
-      expect(generateButton).not.toBeDisabled();
+      expect(generateButton).toBeDisabled();
+      expect(screen.getByText(/Coming Soon/i)).toBeInTheDocument();
     });
 
     it("should show refinement placeholder when screenplay exists", () => {

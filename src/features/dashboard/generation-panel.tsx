@@ -714,22 +714,16 @@ export function GenerationPanel({
         </div>
 
         <div className="space-y-4">
-          {/* Screenplay/Content AI Model */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-medium">
-                {contentType === "presentation"
-                  ? "Choose Model for Screenplay Generation"
-                  : "Choose Model for Slideshows"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {contentType === "presentation"
-                  ? "Slide content & narration"
-                  : "Script & narration generation"}
-              </span>
+          {/* Screenplay model: only for reel/short/vfx (not presentation). Slideshow uses the dropdown in Settings. */}
+          {contentType !== "presentation" && (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-sm font-medium">Choose Model for Screenplay Generation</span>
+                <span className="text-xs text-muted-foreground">Script & narration generation</span>
+              </div>
+              <ModelSelector value={selectedModel} onValueChange={setSelectedModel} />
             </div>
-            <ModelSelector value={selectedModel} onValueChange={setSelectedModel} />
-          </div>
+          )}
 
           {/* Video Generation Model OR Slideshow Style */}
           {contentType === "presentation" ? (
@@ -807,7 +801,7 @@ export function GenerationPanel({
 
             {/* Content AI model for slideshow generation */}
             <div className="space-y-2">
-              <Label className="text-sm">Choose Model for Screenplay Generation</Label>
+              <Label className="text-sm">Choose Model for SlideShow </Label>
               <Select
                 value={contentAiModel}
                 onValueChange={(v) => setContentAiModel(v as ContentAiModel)}
