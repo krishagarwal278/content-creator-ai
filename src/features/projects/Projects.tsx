@@ -25,6 +25,7 @@ import {
   Film,
   Grid3X3,
   List,
+  FileText,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -125,11 +126,12 @@ interface ProjectCardProps {
     updated_at?: string;
   };
   onOpen: () => void;
+  onOpenFiles?: () => void;
   onDelete: () => void;
   viewMode: "grid" | "list";
 }
 
-function ProjectCard({ project, onOpen, onDelete, viewMode }: ProjectCardProps) {
+function ProjectCard({ project, onOpen, onOpenFiles, onDelete, viewMode }: ProjectCardProps) {
   const status = statusConfig[project.status] || statusConfig.draft;
   const formatColor = formatColors[project.content_type] || formatColors.reel;
   const formatLabel = formatLabels[project.content_type] || project.content_type;
@@ -198,6 +200,17 @@ function ProjectCard({ project, onOpen, onDelete, viewMode }: ProjectCardProps) 
               <FolderOpen className="mr-2 h-4 w-4" />
               Open Project
             </DropdownMenuItem>
+            {onOpenFiles && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenFiles();
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Project files
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onDelete} className="text-red-400 focus:text-red-400">
               <Trash2 className="mr-2 h-4 w-4" />
@@ -259,6 +272,17 @@ function ProjectCard({ project, onOpen, onDelete, viewMode }: ProjectCardProps) 
                 <FolderOpen className="mr-2 h-4 w-4" />
                 Open Project
               </DropdownMenuItem>
+              {onOpenFiles && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenFiles();
+                  }}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Project files
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-red-400 focus:text-red-400">
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -275,10 +299,26 @@ function ProjectCard({ project, onOpen, onDelete, viewMode }: ProjectCardProps) 
         {project.description && (
           <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{project.description}</p>
         )}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <Badge variant="outline" className={`${formatColor} text-[10px]`}>
-            {formatLabel}
-          </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={`${formatColor} text-[10px]`}>
+              {formatLabel}
+            </Badge>
+            {onOpenFiles && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenFiles();
+                }}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Files
+              </Button>
+            )}
+          </div>
           <span>{format(new Date(project.created_at), "MMM d, yyyy")}</span>
         </div>
       </div>
@@ -644,6 +684,7 @@ const Projects = () => {
                   project={project}
                   viewMode={viewMode}
                   onOpen={() => navigate(`/project/${project.id}`)}
+                  onOpenFiles={() => navigate(`/projects/${project.id}/files`)}
                   onDelete={() => setDeleteProject({ id: project.id, name: project.name })}
                 />
               ))}
@@ -656,6 +697,7 @@ const Projects = () => {
                   project={project}
                   viewMode={viewMode}
                   onOpen={() => navigate(`/project/${project.id}`)}
+                  onOpenFiles={() => navigate(`/projects/${project.id}/files`)}
                   onDelete={() => setDeleteProject({ id: project.id, name: project.name })}
                 />
               ))}
