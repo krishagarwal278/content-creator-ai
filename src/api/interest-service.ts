@@ -14,7 +14,14 @@ export type UserRole =
   | "developer"
   | "other";
 
-export type EarlyAccessPriority = "very_interested" | "somewhat_interested" | "just_exploring";
+export type EarlyAccessPriority =
+  | "very_interested"
+  | "somewhat_interested"
+  | "just_exploring"
+  | "planning_my_first_course"
+  | "few_courses"
+  | "many_courses"
+  | "scale_courses";
 
 export type UseCase =
   | "create_learning_videos"
